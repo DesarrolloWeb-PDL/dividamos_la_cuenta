@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button } from 'react-native';
 import Contacts from 'react-native-contacts';
-import { getRealm } from '../services/realm';
+import { RealmContext } from '../models';
+const { useRealm } = RealmContext;
 import { Group } from '../models/Group';
 import { Participant } from '../models/Participant';
 import { PermissionsAndroid, Platform } from 'react-native';
@@ -11,6 +12,7 @@ export default function CreateGroup({ navigation }) {
   const [groupName, setGroupName] = useState('');
   const [contacts, setContacts] = useState([]);
   const [selected, setSelected] = useState([]);
+  const realm = useRealm();
 
   async function requestContactsPermission() {
     if (Platform.OS === 'android') {
@@ -37,8 +39,7 @@ export default function CreateGroup({ navigation }) {
     );
   }
 
-  async function createGroup() {
-    const realm = await getRealm();
+  function createGroup() {
     realm.write(() => {
       const participants = selected.map(contact =>
         realm.create('Participant', {
@@ -53,7 +54,6 @@ export default function CreateGroup({ navigation }) {
         transactions: [],
       });
     });
-    realm.close();
     navigation.navigate('HomeScreen');
   }
 

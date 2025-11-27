@@ -1,23 +1,10 @@
 // Pantalla principal: listado de grupos y acceso a gastos
 
-import React, { useEffect, useState } from 'react';
-import { View, Text, Button, FlatList } from 'react-native';
-import { getRealm } from '../services/realm';
+import { RealmContext } from '../models';
+const { useQuery } = RealmContext;
 
 export default function HomeScreen({ navigation }) {
-  const [groups, setGroups] = useState([]);
-
-  useEffect(() => {
-    let realm;
-    (async () => {
-      realm = await getRealm();
-      const realmGroups = realm.objects('Group');
-      setGroups([...realmGroups]);
-    })();
-    return () => {
-      if (realm) realm.close();
-    };
-  }, []);
+  const groups = useQuery('Group');
 
   return (
     <View style={{ flex: 1, padding: 16 }}>

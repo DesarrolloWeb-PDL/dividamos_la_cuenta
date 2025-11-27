@@ -5,54 +5,42 @@ import { View, Text, Button, FlatList } from 'react-native';
 import ExpenseInput from '../components/ExpenseInput';
 import { calculateNetPositions, minimizeTransactions } from '../services/settlement';
 import { generateWhatsAppLink, fetchAlias, openWhatsApp } from '../services/whatsappLink';
-import { getRealm } from '../services/realm';
+import { RealmContext } from '../models';
+const { useObject, useRealm } = RealmContext;
+import { BSON } from 'realm';
 
 export default function GroupDetail({ route }) {
-  const [group, setGroup] = useState(null);
-  const [payments, setPayments] = useState([]);
   const groupId = route?.params?.groupId;
+  const group = useObject('Group', new BSON.ObjectId(groupId));
+  const realm = useRealm();
+  const [payments, setPayments] = useState([]);
 
   useEffect(() => {
-    let realm;
-    (async () => {
-      realm = await getRealm();
-      const found = realm.objectForPrimaryKey('Group', groupId);
-      if (found) {
-        setGroup(JSON.parse(JSON.stringify(found)));
-        const net = calculateNetPositions(found.participants, found.transactions);
-        setPayments(minimizeTransactions(net));
-      }
-    })();
-    return () => {
-      if (realm) realm.close();
-    };
-  }, [groupId]);
-
-  async function handleAddExpense(expense) {
-    const realm = await getRealm();
-    realm.write(() => {
-      const found = realm.objectForPrimaryKey('Group', groupId);
-      if (found) {
-        found.transactions.push(expense);
-      }
-    });
-    realm.close();
-    // Refresca datos
-    let realm2 = await getRealm();
-    const updated = realm2.objectForPrimaryKey('Group', groupId);
-    if (updated) {
-      setGroup(JSON.parse(JSON.stringify(updated)));
-      const net = calculateNetPositions(updated.participants, updated.transactions);
+    if (group) {
+      const net = calculateNetPositions(group.participants, group.transactions);
       setPayments(minimizeTransactions(net));
     }
-    realm2.close();
+  }, [group]);
+
+  function handleAddExpense(expense) {
+    realm.write(() => {
+      group.transactions.push(expense);
+    });
   }
 
-  async function handleRequestPayment(payment) {
-    const alias = await fetchAlias(payment.to);
-    const debtor = group.participants.find(p => p.id === payment.from);
-    const url = generateWhatsAppLink(debtor.phone, payment.amount, alias);
-    openWhatsApp(url);
+  function handleRequestPayment(payment) {
+    const debtor = group.participants.find(p => p.id.toString() === payment.from.toString());
+    // Note: payment.to/from are ObjectIds in settlement logic? 
+    // Wait, settlement logic uses ids from participants.
+    // If participants ids are ObjectIds, then payment.from is ObjectId.
+    // We need to check how settlement.js handles ids.
+    // It uses p.id.
+
+    // fetchAlias is async.
+    fetchAlias(payment.to).then(alias => {
+      const url = generateWhatsAppLink(debtor.phone, payment.amount, alias);
+      openWhatsApp(url);
+    });
   }
 
   if (!group) {
