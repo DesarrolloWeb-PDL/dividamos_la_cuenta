@@ -24,3 +24,8 @@ export async function addExpense(expense: Omit<Expense, '_id'>) {
 export async function getAllExpenses() {
   return readCollection<StoredExpense>(EXPENSES_STORAGE_KEY);
 }
+
+export async function getExpensesByGroup(groupId: string) {
+  const expenses = await getAllExpenses();
+  return expenses.filter(expense => expense.groupId === groupId);
+}

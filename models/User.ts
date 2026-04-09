@@ -4,6 +4,7 @@ export type UserId = {
 
 export type User = {
   _id: UserId;
+  groupId: string;
   name: string;
   phone: string;
   alias: string;

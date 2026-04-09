@@ -10,43 +10,57 @@
    ```bash
    npx expo start
    ```
-3. Abrí la app en un dispositivo o emulador.
+3. Abrí la app en un dispositivo, emulador o en web con `w`.
 
-## Flujo sugerido
+## Flujo sugerido principal
 
-1. Entrá a Usuarios.
-   Resultado esperado: la lista aparece vacía y podés navegar a Agregar Usuario.
-2. Cargá al menos 3 usuarios.
-   Resultado esperado: al volver, la lista muestra los usuarios sin reiniciar la app.
-3. Volvé a la Home.
-   Resultado esperado: la pantalla muestra acciones principales, métricas y una lista vacía de gastos.
-4. Creá un gasto con descripción, monto, participantes y pagador.
-   Resultado esperado: al volver a Home aparece el gasto nuevo.
-5. Creá otro gasto usando montos personalizados por participante.
-   Resultado esperado: la app sólo permite guardar si la suma de montos personalizados coincide con el total.
-6. Revisá el bloque de saldos.
-   Resultado esperado: la persona que pagó queda a favor y quienes participaron quedan con deuda proporcional.
-7. Revisá el bloque de liquidación sugerida.
-   Resultado esperado: aparece al menos una transferencia si hay deuda entre usuarios.
-8. Abrí el detalle del gasto en la Home.
-   Resultado esperado: cada participante muestra cuánto le corresponde aportar, respetando el modo igualitario o personalizado.
-9. Tocá Compartir liquidación.
-   Resultado esperado: si WhatsApp está instalado abre con el mensaje precargado; si no, aparece el share nativo.
+1. Entrá a la pantalla de grupos.
+   Resultado esperado: si no hay datos, aparece el estado vacío y el botón para crear un grupo.
+2. Creá un grupo nuevo.
+   Resultado esperado: la app navega al resumen del grupo recién creado.
+3. Entrá a Integrantes y cargá al menos 3 personas.
+   Resultado esperado: la lista muestra alias o nombre sin reiniciar la app.
+4. Volvé al resumen del grupo.
+   Resultado esperado: la tarjeta de métricas muestra integrantes y cero gastos.
+5. Creá un gasto de $100 con 4 participantes y un solo pagador que ponga $100.
+   Resultado esperado: el gasto se guarda y el pagador queda a favor por lo que adelantó menos su propio consumo.
+6. Creá otro gasto de $100 con dos pagadores: uno pone $80 y otro $20.
+   Resultado esperado: la app sólo deja guardar si la suma de pagos da exactamente $100.
+7. Usá división igualitaria en ese segundo gasto.
+   Resultado esperado: el consumo se reparte entre todos los participantes, incluyendo a quienes pagaron.
+8. Creá un tercer gasto con división personalizada.
+   Resultado esperado: la app sólo deja guardar si la suma del consumo personalizado coincide con el total.
+9. Revisá el bloque de saldos.
+   Resultado esperado: cada integrante muestra su saldo neto dentro del grupo según pagos menos consumo.
+10. Revisá la liquidación sugerida.
+    Resultado esperado: aparecen transferencias entre deudores y acreedores del grupo.
+11. Tocá Compartir liquidación.
+    Resultado esperado: si WhatsApp está instalado abre con el mensaje precargado; si no, aparece el share nativo.
 
 ## Casos de borde
 
 1. Intentá crear un gasto sin participantes.
    Resultado esperado: aparece un alert de validación.
-2. Intentá crear un gasto sin pagador.
+2. Intentá crear un gasto sin personas que paguen.
    Resultado esperado: aparece un alert de validación.
-3. Intentá crear un gasto con monto inválido.
+3. Intentá cargar pagos cuya suma no coincida con el total.
    Resultado esperado: aparece un alert de validación.
-4. Intentá guardar una división personalizada cuya suma no coincide con el total.
+4. Intentá crear un gasto con monto inválido.
    Resultado esperado: aparece un alert de validación.
+5. Intentá guardar una división personalizada cuya suma no coincida con el total.
+   Resultado esperado: aparece un alert de validación.
+6. Intentá abrir un grupo sin integrantes y crear un gasto.
+   Resultado esperado: la app invita a ir a la pantalla de integrantes.
 
 ## Qué revisar visualmente
 
-1. Que la Home siga siendo legible con 10 o más gastos.
-2. Que los montos se vean con dos decimales.
-3. Que los nombres de usuarios no queden truncados de forma confusa.
-4. Que el share no se rompa si no hay gastos cargados.
+1. Que la lista de grupos sea legible y muestre cantidad de integrantes y gastos.
+2. Que el formulario de gasto deje clara la diferencia entre participar y pagar.
+3. Que los totales de pagos cargados y consumo asignado se entiendan sin ambigüedad.
+4. Que los montos se vean con dos decimales en resumen y liquidación.
+5. Que alias y nombres no queden truncados de forma confusa.
+6. Que compartir no se rompa si el grupo todavía no tiene gastos.
+
+## Nota sobre datos previos
+
+Si venías usando una versión vieja de la app sin grupos, puede haber datos viejos en el storage local que ya no entren en el flujo nuevo. Para una validación limpia, probá con almacenamiento vacío o reinstalando la app de desarrollo.

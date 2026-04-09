@@ -1,13 +1,19 @@
+type PaymentLike = {
+  userId: string;
+  amount: number;
+};
+
 type ExpenseLike = {
   amount: number;
   participants: string[];
   participantAmounts?: number[];
-  paidBy: string;
+  payments: PaymentLike[];
 };
 
 type UserLike = {
   _id: { toString(): string } | string;
   name: string;
+  alias?: string;
 };
 
 export type UserBalance = {
@@ -40,7 +46,7 @@ const fromCents = (amountInCents: number) => amountInCents / 100;
 
 function buildUserDirectory(users: UserLike[]) {
   return new Map(
-    users.map(user => [user._id.toString(), user.name]),
+    users.map(user => [user._id.toString(), user.alias?.trim() || user.name]),
   );
 }
 
@@ -74,8 +80,16 @@ function splitExpenseInCents(amount: number, participants: string[], participant
 export function calculateExpenseBreakdown(expense: ExpenseLike, users: UserLike[]) {
   const userDirectory = buildUserDirectory(users);
 
+  const payments = expense.payments
+    .filter(payment => payment.amount > 0)
+    .map(payment => ({
+      userId: payment.userId,
+      userName: userDirectory.get(payment.userId) ?? 'Sin asignar',
+      amount: payment.amount,
+    }));
+
   return {
-    payerName: userDirectory.get(expense.paidBy) ?? 'Sin asignar',
+    paymentSummary: payments,
     isCustom: hasCustomAmounts(expense),
     shares: splitExpenseInCents(expense.amount, expense.participants, expense.participantAmounts).map(share => ({
       userId: share.participantId,
@@ -95,17 +109,22 @@ export function calculateSettlement(expenses: ExpenseLike[], users: UserLike[]):
   });
 
   expenses.forEach(expense => {
-    if (!expense.paidBy || expense.participants.length === 0) {
+    if (expense.participants.length === 0 || expense.payments.length === 0) {
       return;
     }
 
-    const amountInCents = toCents(expense.amount);
     const shares = splitExpenseInCents(expense.amount, expense.participants, expense.participantAmounts);
 
-    balancesInCents.set(
-      expense.paidBy,
-      (balancesInCents.get(expense.paidBy) ?? 0) + amountInCents,
-    );
+    expense.payments.forEach(payment => {
+      if (payment.amount <= 0) {
+        return;
+      }
+
+      balancesInCents.set(
+        payment.userId,
+        (balancesInCents.get(payment.userId) ?? 0) + toCents(payment.amount),
+      );
+    });
 
     shares.forEach(share => {
       balancesInCents.set(

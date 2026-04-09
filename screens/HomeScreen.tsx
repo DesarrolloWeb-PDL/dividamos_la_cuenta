@@ -1,31 +1,34 @@
-
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Alert, Linking, Share } from 'react-native';
-import { getAllExpenses } from '../services/expenseService';
-import { getAllUsers } from '../services/userService';
+import { getExpensesByGroup } from '../services/expenseService';
+import { getUsersByGroup } from '../services/userService';
 import { calculateExpenseBreakdown, calculateSettlement, formatSettlementMessage, SettlementTransfer, UserBalance } from '../services/settlementService';
 import CustomButton from '../components/CustomButton';
 
 type ExpenseView = {
-  _id: { toString(): string };
+  _id: { toString(): string } | string;
+  groupId: string;
   description: string;
   amount: number;
   participants: string[];
   participantAmounts: number[];
-  paidBy: string;
+  payments: Array<{ userId: string; amount: number }>;
 };
 
 type UserView = {
-  _id: { toString(): string };
+  _id: { toString(): string } | string;
   name: string;
+  alias?: string;
 };
 
-export default function HomeScreen({ navigation }: any) {
+export default function HomeScreen({ navigation, route }: any) {
   const [expenses, setExpenses] = useState<ExpenseView[]>([]);
   const [balances, setBalances] = useState<UserBalance[]>([]);
   const [transfers, setTransfers] = useState<SettlementTransfer[]>([]);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<UserView[]>([]);
+  const groupId = route?.params?.groupId;
+  const groupName = route?.params?.groupName ?? 'Grupo';
 
   const totalAmount = useMemo(
     () => expenses.reduce((sum, expense) => sum + expense.amount, 0),
@@ -43,7 +46,7 @@ export default function HomeScreen({ navigation }: any) {
       return;
     }
 
-    const message = formatSettlementMessage({ balances, transfers });
+    const message = `${groupName}\n\n${formatSettlementMessage({ balances, transfers })}`;
     const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
 
     try {
@@ -62,9 +65,18 @@ export default function HomeScreen({ navigation }: any) {
 
   useEffect(() => {
     const loadExpenses = async () => {
-      const [expenseData, userData] = await Promise.all([getAllExpenses(), getAllUsers()]);
+      if (!groupId) {
+        setExpenses([]);
+        setUsers([]);
+        setUserNames({});
+        setBalances([]);
+        setTransfers([]);
+        return;
+      }
+
+      const [expenseData, userData] = await Promise.all([getExpensesByGroup(groupId), getUsersByGroup(groupId)]);
       const nextUserNames = userData.reduce<Record<string, string>>((accumulator, user) => {
-        accumulator[user._id.toString()] = user.name;
+        accumulator[user._id.toString()] = user.alias?.trim() || user.name;
         return accumulator;
       }, {});
       const settlement = calculateSettlement(expenseData, userData);
@@ -80,10 +92,13 @@ export default function HomeScreen({ navigation }: any) {
     const unsubscribe = navigation.addListener('focus', loadExpenses);
 
     return unsubscribe;
-  }, [navigation]);
+  }, [groupId, navigation]);
 
   const renderExpenseItem = ({ item }: { item: ExpenseView }) => {
     const breakdown = calculateExpenseBreakdown(item, users);
+    const paymentLabel = breakdown.paymentSummary.length === 0
+      ? 'Sin pagos cargados'
+      : breakdown.paymentSummary.map(payment => `${payment.userName} $${payment.amount.toFixed(2)}`).join(' · ');
 
     return (
       <View style={styles.expenseCard}>
@@ -93,7 +108,7 @@ export default function HomeScreen({ navigation }: any) {
             <Text style={styles.expenseAmount}>${item.amount.toFixed(2)}</Text>
           </View>
           <View style={styles.payerBadge}>
-            <Text style={styles.payerBadgeText}>Pagó {breakdown.payerName}</Text>
+            <Text style={styles.payerBadgeText}>Pagaron {paymentLabel}</Text>
           </View>
         </View>
         <Text style={styles.expenseMeta}>
@@ -126,9 +141,9 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.headerStack}>
           <View style={styles.heroCard}>
             <Text style={styles.eyebrow}>Resumen actual</Text>
-            <Text style={styles.title}>Dividamos la Cuenta</Text>
+            <Text style={styles.title}>{groupName}</Text>
             <Text style={styles.subtitle}>
-              Registrá gastos, mirá saldos y compartí la liquidación sin salir de la Home.
+              Registrá gastos, mirá saldos y compartí la liquidación de este grupo.
             </Text>
           </View>
 
@@ -138,7 +153,7 @@ export default function HomeScreen({ navigation }: any) {
               <Text style={styles.statValue}>{expenses.length}</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Personas</Text>
+              <Text style={styles.statLabel}>Integrantes</Text>
               <Text style={styles.statValue}>{users.length}</Text>
             </View>
             <View style={styles.statCard}>
@@ -149,8 +164,8 @@ export default function HomeScreen({ navigation }: any) {
 
           <View style={styles.actionsCard}>
             <Text style={styles.sectionHeading}>Acciones</Text>
-            <CustomButton title="Agregar Gasto" onPress={() => navigation.navigate('AddExpense')} />
-            <CustomButton title="Ver Usuarios" onPress={() => navigation.navigate('Users')} color="#0f766e" />
+            <CustomButton title="Agregar Gasto" onPress={() => navigation.navigate('AddExpense', { groupId, groupName })} />
+            <CustomButton title="Ver Integrantes" onPress={() => navigation.navigate('Users', { groupId, groupName })} color="#0f766e" />
             <CustomButton title="Compartir liquidación" onPress={handleShareSettlement} color="#198754" />
           </View>
 
@@ -193,7 +208,7 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.emptyStateCard}>
           <Text style={styles.emptyStateTitle}>Todavía no hay gastos</Text>
           <Text style={styles.emptyStateText}>
-            Cargá un gasto para empezar a calcular saldos y liquidación entre participantes.
+            Cargá un gasto en este grupo para empezar a calcular saldos y liquidación entre integrantes.
           </Text>
         </View>
       )}

@@ -22,3 +22,8 @@ export async function addUser(user: Omit<User, '_id'>) {
 export async function getAllUsers() {
   return readCollection<StoredUser>(USERS_STORAGE_KEY);
 }
+
+export async function getUsersByGroup(groupId: string) {
+  const users = await getAllUsers();
+  return users.filter(user => user.groupId === groupId);
+}
