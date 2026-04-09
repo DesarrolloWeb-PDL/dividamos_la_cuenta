@@ -20,6 +20,10 @@
    Resultado esperado: la app navega al resumen del grupo recién creado.
 3. Entrá a Integrantes y cargá al menos 3 personas.
    Resultado esperado: la lista muestra alias o nombre sin reiniciar la app.
+4. Si probás desde Android o iPhone, usá Importar desde contactos.
+   Resultado esperado: al elegir un contacto con teléfono, el formulario de alta se abre precargado.
+5. Intentá guardar un contacto cuyo teléfono ya exista en el grupo.
+   Resultado esperado: la app avisa que ya existe un integrante con ese teléfono.
 4. Volvé al resumen del grupo.
    Resultado esperado: la tarjeta de métricas muestra integrantes y cero gastos.
 5. Creá un gasto de $100 con 4 participantes y un solo pagador que ponga $100.
@@ -51,6 +55,8 @@
    Resultado esperado: aparece un alert de validación.
 6. Intentá abrir un grupo sin integrantes y crear un gasto.
    Resultado esperado: la app invita a ir a la pantalla de integrantes.
+7. Intentá importar contactos desde web.
+   Resultado esperado: la app muestra que esa función está disponible sólo en móvil.
 
 ## Qué revisar visualmente
 

@@ -5,6 +5,14 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "plugins": [
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Permití que Dividamos CTA acceda a tus contactos para sumar integrantes más rápido."
+        }
+      ]
+    ]
   }
 }

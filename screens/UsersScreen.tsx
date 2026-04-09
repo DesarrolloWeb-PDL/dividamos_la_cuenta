@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert } from 'react-native';
+import { importSingleContactDraft } from '../services/contactImportService';
 import { getUsersByGroup } from '../services/userService';
 import CustomButton from '../components/CustomButton';
 
@@ -9,6 +10,45 @@ export default function UsersScreen({ navigation, route }: any) {
   const [users, setUsers] = useState<any[]>([]);
   const groupId = route?.params?.groupId;
   const groupName = route?.params?.groupName ?? 'Grupo';
+
+  const navigateToAddUser = (draftContact: { name: string; phone: string; alias: string } | null) => {
+    navigation.navigate('AddUser', {
+      groupId,
+      groupName,
+      draftContact,
+      draftToken: Date.now(),
+    });
+  };
+
+  const handleImportContact = async () => {
+    const result = await importSingleContactDraft();
+
+    if (result.status === 'success') {
+      navigateToAddUser(result.draft);
+      return;
+    }
+
+    if (result.status === 'cancelled') {
+      return;
+    }
+
+    if (result.status === 'unsupported') {
+      Alert.alert('No disponible', 'La importación de contactos está disponible sólo en la app móvil.');
+      return;
+    }
+
+    if (result.status === 'permission-denied') {
+      Alert.alert('Permiso requerido', 'Necesitás permitir acceso a contactos para importar integrantes.');
+      return;
+    }
+
+    if (result.status === 'missing-phone') {
+      Alert.alert('Sin teléfono', 'El contacto elegido no tiene un número de teléfono utilizable.');
+      return;
+    }
+
+    Alert.alert('Error', result.message);
+  };
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -25,13 +65,15 @@ export default function UsersScreen({ navigation, route }: any) {
     const unsubscribe = navigation.addListener('focus', loadUsers);
 
     return unsubscribe;
-  }, [navigation]);
+  }, [groupId, navigation]);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Integrantes</Text>
       <Text style={styles.subtitle}>{groupName}</Text>
-      <CustomButton title="Agregar integrante" onPress={() => navigation.navigate('AddUser', { groupId, groupName })} />
+      <CustomButton title="Agregar integrante" onPress={() => navigateToAddUser(null)} />
+      <CustomButton title="Importar desde contactos" onPress={handleImportContact} color="#198754" />
+      <Text style={styles.helperText}>En web vas a ver un fallback. La importación real funciona en Android y iPhone.</Text>
       <FlatList
         data={users}
         keyExtractor={item => item._id.toString()}
@@ -51,6 +93,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#fff' },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
   subtitle: { color: '#475569', marginBottom: 16 },
+  helperText: { color: '#64748b', lineHeight: 20, marginBottom: 12 },
   item: { padding: 12, borderBottomWidth: 1, borderColor: '#eee' },
   itemName: { fontSize: 16, fontWeight: '600', color: '#111827' },
   itemMeta: { color: '#64748b', marginTop: 2 },

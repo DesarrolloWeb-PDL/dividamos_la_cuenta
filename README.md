@@ -39,11 +39,19 @@ La app activa del proyecto vive en esta raíz y arranca desde App.tsx.
 
 1. Crear grupo.
 2. Agregar integrantes al grupo.
+3. Opcionalmente importar un contacto desde el teléfono en móvil.
 3. Cargar un gasto dentro del grupo.
 4. Marcar quiénes participaron.
 5. Marcar quiénes pagaron y cuánto puso cada uno.
 6. Elegir división igualitaria o personalizada.
 7. Ver saldos y liquidación sugerida sólo para ese grupo.
+
+## Contactos del teléfono
+
+- La importación básica de un contacto ya está integrada para Android/iPhone.
+- En web se muestra fallback y no intenta acceder a contactos.
+- El contacto importado precarga nombre, teléfono y alias sugerido antes de guardar.
+- Si el teléfono ya existe dentro del grupo, la app bloquea el duplicado.
 
 ## Validación manual
 
