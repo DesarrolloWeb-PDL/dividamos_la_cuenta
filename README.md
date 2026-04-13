@@ -71,6 +71,7 @@ Configuración recomendada en Vercel:
 2. Build command: `npm run export:web`
 3. Output directory: `dist`
 4. El repo ya incluye [vercel.json](vercel.json) con la configuración mínima para servir la manifest web correctamente.
+5. Si volvés a definir favicon web en [app.json](app.json), usá un archivo raster (`.png` o `.ico`). Expo no exporta favicon SVG y la build falla.
 
 ## Instalar Como App Web
 
