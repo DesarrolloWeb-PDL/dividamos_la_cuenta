@@ -17,7 +17,8 @@
       "display": "standalone",
       "startUrl": "/",
       "orientation": "portrait",
-      "backgroundColor": "#f3f5f8"
+      "backgroundColor": "#f3f5f8",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       [
