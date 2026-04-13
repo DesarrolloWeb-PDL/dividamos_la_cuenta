@@ -8,4 +8,5 @@ export type User = {
   name: string;
   phone: string;
   alias: string;
+  paymentHandle?: string;
 };

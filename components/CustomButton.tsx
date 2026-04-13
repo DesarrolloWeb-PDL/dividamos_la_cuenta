@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { useAppTheme } from '../theme/appTheme';
 
 type Props = {
   title: string;
@@ -7,9 +8,12 @@ type Props = {
   color?: string;
 };
 
-export default function CustomButton({ title, onPress, color = '#007bff' }: Props) {
+export default function CustomButton({ title, onPress, color }: Props) {
+  const { colors } = useAppTheme();
+  const backgroundColor = color ?? colors.primary;
+
   return (
-    <TouchableOpacity style={[styles.button, { backgroundColor: color }]} onPress={onPress}>
+    <TouchableOpacity style={[styles.button, { backgroundColor }]} onPress={onPress}>
       <Text style={styles.text}>{title}</Text>
     </TouchableOpacity>
   );

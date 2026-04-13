@@ -4,8 +4,22 @@
     "slug": "dividamos-cta",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "web": {
+      "output": "single",
+      "name": "Dividamos CTA",
+      "shortName": "Dividamos",
+      "lang": "es",
+      "scope": "/",
+      "themeColor": "#0f172a",
+      "description": "App para dividir gastos por grupo, calcular saldos y compartir liquidaciones.",
+      "display": "standalone",
+      "startUrl": "/",
+      "orientation": "portrait",
+      "backgroundColor": "#f3f5f8",
+      "favicon": "./assets/favicon.svg"
+    },
     "plugins": [
       [
         "expo-contacts",

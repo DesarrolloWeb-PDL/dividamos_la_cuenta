@@ -1,15 +1,30 @@
 
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, FlatList, StyleSheet, Alert, Pressable } from 'react-native';
 import { importSingleContactDraft } from '../services/contactImportService';
-import { getUsersByGroup } from '../services/userService';
+import { isUserLinkedToGroupExpenses } from '../services/expenseService';
+import { detectPaymentHandleKind, getPaymentHandleLabel } from '../services/paymentHandle';
+import { deleteUser, getUsersByGroup } from '../services/userService';
 import CustomButton from '../components/CustomButton';
+import { AppPalette, useAppTheme } from '../theme/appTheme';
 
 
 export default function UsersScreen({ navigation, route }: any) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [users, setUsers] = useState<any[]>([]);
   const groupId = route?.params?.groupId;
   const groupName = route?.params?.groupName ?? 'Grupo';
+
+  const loadUsers = async () => {
+    if (!groupId) {
+      setUsers([]);
+      return;
+    }
+
+    const data = await getUsersByGroup(groupId);
+    setUsers(data);
+  };
 
   const navigateToAddUser = (draftContact: { name: string; phone: string; alias: string } | null) => {
     navigation.navigate('AddUser', {
@@ -18,6 +33,39 @@ export default function UsersScreen({ navigation, route }: any) {
       draftContact,
       draftToken: Date.now(),
     });
+  };
+
+  const handleDeleteUser = (user: any) => {
+    Alert.alert(
+      'Eliminar integrante',
+      `Se va a borrar ${user.alias?.trim() || user.name}.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            if (!groupId) {
+              return;
+            }
+
+            const isLinked = await isUserLinkedToGroupExpenses(groupId, user._id.toString());
+
+            if (isLinked) {
+              Alert.alert(
+                'No se puede eliminar',
+                'Este integrante ya participa en gastos del grupo. Primero tendrías que borrar esos gastos para no romper la liquidación.',
+              );
+              return;
+            }
+
+            await deleteUser(user._id.toString());
+            await loadUsers();
+            Alert.alert('Integrante eliminado', 'El integrante se borró del grupo.');
+          },
+        },
+      ],
+    );
   };
 
   const handleImportContact = async () => {
@@ -51,16 +99,6 @@ export default function UsersScreen({ navigation, route }: any) {
   };
 
   useEffect(() => {
-    const loadUsers = async () => {
-      if (!groupId) {
-        setUsers([]);
-        return;
-      }
-
-      const data = await getUsersByGroup(groupId);
-      setUsers(data);
-    };
-
     loadUsers();
     const unsubscribe = navigation.addListener('focus', loadUsers);
 
@@ -77,24 +115,87 @@ export default function UsersScreen({ navigation, route }: any) {
       <FlatList
         data={users}
         keyExtractor={item => item._id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.item}>
-            <Text style={styles.itemName}>{item.alias?.trim() || item.name}</Text>
-            <Text style={styles.itemMeta}>{item.name} · {item.phone}</Text>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const paymentHandleKind = detectPaymentHandleKind(item.paymentHandle);
+          const paymentBadgeStyle = paymentHandleKind === 'link'
+            ? styles.paymentBadgelink
+            : paymentHandleKind === 'cvu'
+              ? styles.paymentBadgecvu
+              : styles.paymentBadgealias;
+          const paymentBadgeTextStyle = paymentHandleKind === 'link'
+            ? styles.paymentBadgeTextlink
+            : paymentHandleKind === 'cvu'
+              ? styles.paymentBadgeTextcvu
+              : styles.paymentBadgeTextalias;
+
+          return (
+            <View style={styles.item}>
+              <Text style={styles.itemName}>{item.alias?.trim() || item.name}</Text>
+              <Text style={styles.itemMeta}>{item.name} · {item.phone}</Text>
+              {item.paymentHandle?.trim() ? (
+                <View style={[styles.paymentBadge, paymentBadgeStyle]}>
+                  <Text style={[styles.paymentBadgeText, paymentBadgeTextStyle]}>
+                    {getPaymentHandleLabel(item.paymentHandle)}
+                  </Text>
+                  <Text style={styles.paymentValue}>{item.paymentHandle}</Text>
+                </View>
+              ) : null}
+              <View style={styles.itemActions}>
+                <Pressable
+                  onPress={() => navigation.navigate('AddUser', { groupId, groupName, user: item })}
+                  style={[styles.actionButton, styles.editButton]}
+                >
+                  <Text style={styles.editButtonText}>Editar</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleDeleteUser(item)}
+                  style={[styles.actionButton, styles.deleteButton]}
+                >
+                  <Text style={styles.deleteButtonText}>Eliminar</Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        }}
         ListEmptyComponent={<Text>No hay integrantes en este grupo todavía.</Text>}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
-  subtitle: { color: '#475569', marginBottom: 16 },
-  helperText: { color: '#64748b', lineHeight: 20, marginBottom: 12 },
-  item: { padding: 12, borderBottomWidth: 1, borderColor: '#eee' },
-  itemName: { fontSize: 16, fontWeight: '600', color: '#111827' },
-  itemMeta: { color: '#64748b', marginTop: 2 },
+const createStyles = (colors: AppPalette) => StyleSheet.create({
+  container: { flex: 1, padding: 16, backgroundColor: colors.background },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: colors.text },
+  subtitle: { color: colors.textMuted, marginBottom: 16 },
+  helperText: { color: colors.textMuted, lineHeight: 20, marginBottom: 12 },
+  item: { padding: 12, borderBottomWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 12, marginBottom: 8 },
+  itemName: { fontSize: 16, fontWeight: '600', color: colors.text },
+  itemMeta: { color: colors.textMuted, marginTop: 2 },
+  paymentBadge: {
+    marginTop: 8,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+  },
+  paymentBadgealias: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+  paymentBadgecvu: { backgroundColor: colors.warningSoft, borderColor: colors.warning },
+  paymentBadgelink: { backgroundColor: colors.successSoft, borderColor: colors.success },
+  paymentBadgeText: { fontWeight: '700', marginBottom: 2 },
+  paymentBadgeTextalias: { color: colors.primary },
+  paymentBadgeTextcvu: { color: colors.warning },
+  paymentBadgeTextlink: { color: colors.success },
+  paymentValue: { color: colors.textMuted },
+  itemActions: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  actionButton: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  editButton: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  deleteButton: { borderColor: colors.danger, backgroundColor: colors.dangerSoft },
+  editButtonText: { color: colors.primary, fontWeight: '700' },
+  deleteButtonText: { color: colors.danger, fontWeight: '700' },
 });

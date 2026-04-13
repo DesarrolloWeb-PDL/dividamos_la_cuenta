@@ -29,3 +29,27 @@ export async function getGroupById(groupId: string) {
   const groups = await getAllGroups();
   return groups.find(group => group._id.toString() === groupId) ?? null;
 }
+
+export async function updateGroup(groupId: string, updates: Pick<Group, 'name' | 'description' | 'whatsappGroupLink'>) {
+  const groups = await readCollection<StoredGroup>(GROUPS_STORAGE_KEY);
+  const nextGroups = groups.map(group => (
+    group._id.toString() === groupId
+      ? {
+        ...group,
+        name: updates.name,
+        description: updates.description,
+        whatsappGroupLink: updates.whatsappGroupLink ?? '',
+      }
+      : group
+  ));
+
+  await writeCollection(GROUPS_STORAGE_KEY, nextGroups);
+
+  return nextGroups.find(group => group._id.toString() === groupId) ?? null;
+}
+
+export async function deleteGroup(groupId: string) {
+  const groups = await readCollection<StoredGroup>(GROUPS_STORAGE_KEY);
+  const nextGroups = groups.filter(group => group._id.toString() !== groupId);
+  await writeCollection(GROUPS_STORAGE_KEY, nextGroups);
+}

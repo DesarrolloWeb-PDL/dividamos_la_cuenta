@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import CustomButton from '../components/CustomButton';
-import { getAllExpenses } from '../services/expenseService';
-import { getAllGroups } from '../services/groupService';
-import { getAllUsers } from '../services/userService';
+import { deleteExpensesByGroup, getAllExpenses } from '../services/expenseService';
+import { deleteGroup, getAllGroups } from '../services/groupService';
+import { deleteUsersByGroup, getAllUsers } from '../services/userService';
+import { AppPalette, useAppTheme } from '../theme/appTheme';
 
 type GroupView = {
   _id: { toString(): string } | string;
@@ -12,41 +13,67 @@ type GroupView = {
 };
 
 export default function GroupsScreen({ navigation }: any) {
+  const { colors, mode, cycleMode } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [groups, setGroups] = useState<GroupView[]>([]);
   const [memberCountByGroup, setMemberCountByGroup] = useState<Record<string, number>>({});
   const [expenseCountByGroup, setExpenseCountByGroup] = useState<Record<string, number>>({});
 
+  const loadGroups = async () => {
+    const [groupData, userData, expenseData] = await Promise.all([
+      getAllGroups(),
+      getAllUsers(),
+      getAllExpenses(),
+    ]);
+
+    const nextMemberCountByGroup = userData.reduce<Record<string, number>>((accumulator, user) => {
+      if (!user.groupId) {
+        return accumulator;
+      }
+
+      accumulator[user.groupId] = (accumulator[user.groupId] ?? 0) + 1;
+      return accumulator;
+    }, {});
+
+    const nextExpenseCountByGroup = expenseData.reduce<Record<string, number>>((accumulator, expense) => {
+      if (!expense.groupId) {
+        return accumulator;
+      }
+
+      accumulator[expense.groupId] = (accumulator[expense.groupId] ?? 0) + 1;
+      return accumulator;
+    }, {});
+
+    setGroups(groupData);
+    setMemberCountByGroup(nextMemberCountByGroup);
+    setExpenseCountByGroup(nextExpenseCountByGroup);
+  };
+
+  const handleDeleteGroup = (group: GroupView) => {
+    Alert.alert(
+      'Eliminar grupo',
+      `Se va a borrar ${group.name} con sus integrantes y gastos. Esta acción no se puede deshacer.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            const groupId = group._id.toString();
+            await Promise.all([
+              deleteGroup(groupId),
+              deleteUsersByGroup(groupId),
+              deleteExpensesByGroup(groupId),
+            ]);
+            await loadGroups();
+            Alert.alert('Grupo eliminado', 'También se borraron sus integrantes y gastos.');
+          },
+        },
+      ],
+    );
+  };
+
   useEffect(() => {
-    const loadGroups = async () => {
-      const [groupData, userData, expenseData] = await Promise.all([
-        getAllGroups(),
-        getAllUsers(),
-        getAllExpenses(),
-      ]);
-
-      const nextMemberCountByGroup = userData.reduce<Record<string, number>>((accumulator, user) => {
-        if (!user.groupId) {
-          return accumulator;
-        }
-
-        accumulator[user.groupId] = (accumulator[user.groupId] ?? 0) + 1;
-        return accumulator;
-      }, {});
-
-      const nextExpenseCountByGroup = expenseData.reduce<Record<string, number>>((accumulator, expense) => {
-        if (!expense.groupId) {
-          return accumulator;
-        }
-
-        accumulator[expense.groupId] = (accumulator[expense.groupId] ?? 0) + 1;
-        return accumulator;
-      }, {});
-
-      setGroups(groupData);
-      setMemberCountByGroup(nextMemberCountByGroup);
-      setExpenseCountByGroup(nextExpenseCountByGroup);
-    };
-
     loadGroups();
     const unsubscribe = navigation.addListener('focus', loadGroups);
 
@@ -83,6 +110,20 @@ export default function GroupsScreen({ navigation }: any) {
               onPress={() => navigation.navigate('GroupHome', { groupId, groupName: item.name })}
               color="#0f766e"
             />
+            <View style={styles.inlineActions}>
+              <Pressable
+                onPress={() => navigation.navigate('AddGroup', { group: item })}
+                style={[styles.inlineActionButton, styles.inlineActionPrimary]}
+              >
+                <Text style={styles.inlineActionPrimaryText}>Editar</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleDeleteGroup(item)}
+                style={[styles.inlineActionButton, styles.inlineActionDanger]}
+              >
+                <Text style={styles.inlineActionDangerText}>Eliminar</Text>
+              </Pressable>
+            </View>
           </View>
         );
       }}
@@ -90,7 +131,12 @@ export default function GroupsScreen({ navigation }: any) {
       ListHeaderComponent={(
         <View style={styles.headerStack}>
           <View style={styles.heroCard}>
-            <Text style={styles.eyebrow}>Dividamos la Cuenta</Text>
+            <View style={styles.heroTopRow}>
+              <Text style={styles.eyebrow}>Dividamos la Cuenta</Text>
+              <Pressable onPress={cycleMode} style={styles.themeToggle}>
+                <Text style={styles.themeToggleIcon}>{mode === 'dark' ? '☀' : '☾'}</Text>
+              </Pressable>
+            </View>
             <Text style={styles.title}>Tus grupos</Text>
             <Text style={styles.subtitle}>
               Cada grupo tiene sus integrantes, sus gastos y su liquidación independiente.
@@ -114,53 +160,77 @@ export default function GroupsScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f3f5f8' },
+const createStyles = (colors: AppPalette) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, paddingBottom: 32 },
   headerStack: { gap: 12, marginBottom: 16 },
   heroCard: {
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.hero,
     borderRadius: 20,
     padding: 20,
   },
+  heroTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eyebrow: {
-    color: '#93c5fd',
+    color: colors.heroMuted,
     textTransform: 'uppercase',
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 8,
   },
-  title: { fontSize: 28, fontWeight: '700', color: '#f8fafc', marginBottom: 6 },
-  subtitle: { fontSize: 15, lineHeight: 22, color: '#cbd5e1' },
+  themeToggle: {
+    width: 38,
+    height: 38,
+    borderWidth: 1,
+    borderColor: colors.heroMuted,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  themeToggleIcon: { color: colors.textOnHero, fontWeight: '700', fontSize: 18 },
+  title: { fontSize: 28, fontWeight: '700', color: colors.textOnHero, marginBottom: 6 },
+  subtitle: { fontSize: 15, lineHeight: 22, color: colors.heroMuted },
   actionsCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 14,
   },
-  sectionHeading: { fontSize: 18, fontWeight: '700', color: '#0f172a', marginBottom: 6 },
+  sectionHeading: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },
   separator: { height: 12 },
   groupCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 16,
   },
-  groupTitle: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 6 },
-  groupDescription: { color: '#475569', lineHeight: 20 },
+  groupTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 6 },
+  groupDescription: { color: colors.textMuted, lineHeight: 20 },
   statsRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 12,
     padding: 12,
   },
-  statLabel: { color: '#64748b', fontSize: 13, marginBottom: 6 },
-  statValue: { color: '#111827', fontSize: 20, fontWeight: '700' },
+  inlineActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  inlineActionButton: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  inlineActionPrimary: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  inlineActionDanger: { borderColor: colors.danger, backgroundColor: colors.dangerSoft },
+  inlineActionPrimaryText: { color: colors.primary, fontWeight: '700' },
+  inlineActionDangerText: { color: colors.danger, fontWeight: '700' },
+  statLabel: { color: colors.textMuted, fontSize: 13, marginBottom: 6 },
+  statValue: { color: colors.text, fontSize: 20, fontWeight: '700' },
   emptyStateCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 18,
   },
-  emptyStateTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a', marginBottom: 6 },
-  emptyStateText: { color: '#64748b', lineHeight: 21 },
+  emptyStateTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },
+  emptyStateText: { color: colors.textMuted, lineHeight: 21 },
 });

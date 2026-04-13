@@ -11,35 +11,66 @@
    npx expo start
    ```
 3. Abrí la app en un dispositivo, emulador o en web con `w`.
+4. Si querés probarla como app web instalada, publicala en HTTPS y agregala a la pantalla de inicio desde el navegador del celular.
 
 ## Flujo sugerido principal
 
 1. Entrá a la pantalla de grupos.
    Resultado esperado: si no hay datos, aparece el estado vacío y el botón para crear un grupo.
-2. Creá un grupo nuevo.
+2. Probá el toggle de tema en la pantalla principal.
+   Resultado esperado: la app alterna entre modo claro, oscuro y automático sin perder navegación ni legibilidad.
+3. Cerrá y volvé a abrir la app después de cambiar el tema.
+   Resultado esperado: la preferencia elegida se conserva entre sesiones.
+4. Creá un grupo nuevo.
    Resultado esperado: la app navega al resumen del grupo recién creado.
-3. Entrá a Integrantes y cargá al menos 3 personas.
+5. Editá el nombre o la descripción del grupo desde la lista de grupos.
+   Resultado esperado: los cambios se guardan y el grupo mantiene sus integrantes y gastos.
+6. Cargá un link válido del grupo de WhatsApp al crear o editar el grupo.
+   Resultado esperado: el grupo guarda ese destino para el share general.
+7. Eliminá un grupo desde la lista.
+   Resultado esperado: la app pide confirmación y, al aceptar, borra también sus integrantes y gastos.
+8. Entrá a Integrantes y cargá al menos 3 personas.
    Resultado esperado: la lista muestra alias o nombre sin reiniciar la app.
-4. Si probás desde Android o iPhone, usá Importar desde contactos.
+9. Si probás desde Android o iPhone, usá Importar desde contactos.
    Resultado esperado: al elegir un contacto con teléfono, el formulario de alta se abre precargado.
-5. Intentá guardar un contacto cuyo teléfono ya exista en el grupo.
+10. Intentá editar un integrante y cambiar nombre, alias o teléfono.
+   Resultado esperado: la lista refleja los cambios al volver.
+11. Cargá alias o link de cobro en un integrante.
+   Resultado esperado: ese dato queda guardado y luego aparece en los mensajes de transferencia.
+12. Intentá guardar un contacto cuyo teléfono ya exista en el grupo.
    Resultado esperado: la app avisa que ya existe un integrante con ese teléfono.
-4. Volvé al resumen del grupo.
+13. Intentá eliminar un integrante sin gastos asociados.
+   Resultado esperado: la app pide confirmación y luego lo elimina.
+14. Si ese integrante participa en gastos, intentá eliminarlo.
+    Resultado esperado: la app bloquea la acción y explica que primero hay que borrar esos gastos.
+15. Volvé al resumen del grupo.
    Resultado esperado: la tarjeta de métricas muestra integrantes y cero gastos.
-5. Creá un gasto de $100 con 4 participantes y un solo pagador que ponga $100.
+16. Creá un gasto de $100 con 4 participantes y un solo pagador que ponga $100.
    Resultado esperado: el gasto se guarda y el pagador queda a favor por lo que adelantó menos su propio consumo.
-6. Creá otro gasto de $100 con dos pagadores: uno pone $80 y otro $20.
+17. Antes de guardar un gasto, tocá `Calcular división`.
+   Resultado esperado: aparece una vista previa con pagos y consumo por integrante, sin guardar todavía el gasto.
+18. Editá uno de los gastos desde el resumen del grupo.
+   Resultado esperado: el formulario se precarga, permite guardar cambios y la liquidación se recalcula.
+19. Eliminá un gasto individual desde el resumen del grupo.
+   Resultado esperado: la app confirma, elimina el gasto y actualiza saldos y transferencias.
+20. Usá `Limpiar gastos` al final del resumen del grupo.
+   Resultado esperado: la app confirma, borra todos los gastos del grupo y conserva integrantes y grupo.
+21. Creá otro gasto de $100 con dos pagadores: uno pone $80 y otro $20.
    Resultado esperado: la app sólo deja guardar si la suma de pagos da exactamente $100.
-7. Usá división igualitaria en ese segundo gasto.
+22. Usá división igualitaria en ese segundo gasto.
    Resultado esperado: el consumo se reparte entre todos los participantes, incluyendo a quienes pagaron.
-8. Creá un tercer gasto con división personalizada.
+23. Creá un tercer gasto con división personalizada.
    Resultado esperado: la app sólo deja guardar si la suma del consumo personalizado coincide con el total.
-9. Revisá el bloque de saldos.
+24. Revisá el bloque de saldos.
    Resultado esperado: cada integrante muestra su saldo neto dentro del grupo según pagos menos consumo.
-10. Revisá la liquidación sugerida.
+25. Revisá la liquidación sugerida.
     Resultado esperado: aparecen transferencias entre deudores y acreedores del grupo.
-11. Tocá Compartir liquidación.
-    Resultado esperado: si WhatsApp está instalado abre con el mensaje precargado; si no, aparece el share nativo.
+26. Tocá las acciones de compartir y probá al menos `Compartir resumen completo` y `Compartir sólo transferencias` con link de grupo configurado.
+   Resultado esperado: la app copia el mensaje y abre el grupo de WhatsApp para pegarlo ahí.
+27. Probá `Compartir mensaje corto` sin link de grupo configurado.
+   Resultado esperado: se comparte una versión breve de la liquidación, pensada para copiar o reenviar rápido.
+28. Tocá el botón `WhatsApp` en una transferencia individual.
+   Resultado esperado: abre el chat del deudor correcto con un mensaje precargado indicando cuánto, a quién pagar y el alias/link de cobro si está cargado.
 
 ## Casos de borde
 
@@ -57,6 +88,14 @@
    Resultado esperado: la app invita a ir a la pantalla de integrantes.
 7. Intentá importar contactos desde web.
    Resultado esperado: la app muestra que esa función está disponible sólo en móvil.
+8. Intentá eliminar un integrante ya usado en gastos.
+   Resultado esperado: la app bloquea la acción para no romper la liquidación.
+9. Cambiá de tema varias veces mientras navegás pantallas.
+   Resultado esperado: no hay fondos o textos ilegibles al alternar claro, oscuro y automático.
+10. Reiniciá la app después de elegir claro u oscuro.
+   Resultado esperado: el modo elegido se mantiene al volver a abrir.
+11. Abrí la versión web publicada desde el navegador del celular y usá `Agregar a pantalla de inicio`.
+   Resultado esperado: la app queda instalable y se abre en modo standalone desde el acceso directo.
 
 ## Qué revisar visualmente
 
@@ -66,6 +105,7 @@
 4. Que los montos se vean con dos decimales en resumen y liquidación.
 5. Que alias y nombres no queden truncados de forma confusa.
 6. Que compartir no se rompa si el grupo todavía no tiene gastos.
+7. Que las tres variantes de share muestren el contenido esperado para el mismo grupo.
 
 ## Nota sobre datos previos
 

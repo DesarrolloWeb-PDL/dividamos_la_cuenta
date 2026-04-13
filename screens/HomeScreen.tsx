@@ -1,9 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, Linking, Share } from 'react-native';
-import { getExpensesByGroup } from '../services/expenseService';
+import { View, Text, FlatList, StyleSheet, Alert, Linking, Pressable, Share } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import { deleteExpense, deleteExpensesByGroup, getExpensesByGroup } from '../services/expenseService';
 import { getUsersByGroup } from '../services/userService';
-import { calculateExpenseBreakdown, calculateSettlement, formatSettlementMessage, SettlementTransfer, UserBalance } from '../services/settlementService';
+import { getGroupById } from '../services/groupService';
+import { formatPaymentHandleForMessage } from '../services/paymentHandle';
+import { calculateExpenseBreakdown, calculateSettlement, formatDirectTransferMessage, formatSettlementMessage, SettlementMessageVariant, SettlementTransfer, UserBalance } from '../services/settlementService';
 import CustomButton from '../components/CustomButton';
+import { AppPalette, useAppTheme } from '../theme/appTheme';
 
 type ExpenseView = {
   _id: { toString(): string } | string;
@@ -19,16 +23,111 @@ type UserView = {
   _id: { toString(): string } | string;
   name: string;
   alias?: string;
+  phone?: string;
+  paymentHandle?: string;
 };
 
+type GroupDetails = {
+  _id: { toString(): string } | string;
+  name: string;
+  description: string;
+  whatsappGroupLink?: string;
+};
+
+function normalizeWhatsappPhone(phone?: string) {
+  if (!phone) {
+    return '';
+  }
+
+  return phone.replace(/\D/g, '');
+}
+
+function formatTransferTarget(user?: UserView) {
+  const displayName = user?.alias?.trim() || user?.name || 'destinatario';
+  const paymentHandleLine = formatPaymentHandleForMessage(user?.paymentHandle?.trim());
+
+  if (paymentHandleLine) {
+    return `${displayName} · ${paymentHandleLine}`;
+  }
+
+  return displayName;
+}
+
+function buildDetailedGroupMessage(groupName: string, expenses: ExpenseView[], users: UserView[], transfers: SettlementTransfer[], balances: UserBalance[]) {
+  const expenseBlocks = expenses.length === 0
+    ? ['- No hay gastos cargados.']
+    : expenses.map(expense => {
+      const breakdown = calculateExpenseBreakdown(expense, users);
+      const paidByLines = breakdown.paymentSummary.length === 0
+        ? ['- Sin pagos cargados']
+        : breakdown.paymentSummary.map(payment => `- ${payment.userName} $${payment.amount.toFixed(2)}`);
+      const consumedByLines = breakdown.shares.length === 0
+        ? ['- Sin participantes']
+        : breakdown.shares.map(share => `- ${share.userName} $${share.share.toFixed(2)}`);
+
+      return [
+        `${expense.description} $${expense.amount.toFixed(2)}`,
+        'Pagaron:',
+        ...paidByLines,
+        'Consumo:',
+        ...consumedByLines,
+      ].join('\n');
+    });
+
+  const transferLines = transfers.length === 0
+    ? ['- No hace falta transferir nada.']
+    : transfers.map(transfer => {
+      const creditor = users.find(user => user._id.toString() === transfer.toUserId);
+      return `- ${transfer.fromUserName} enviar $${transfer.amount.toFixed(2)} a ${formatTransferTarget(creditor)}`;
+    });
+
+  return [
+    groupName,
+    '',
+    'Detalle de gastos:',
+    ...expenseBlocks,
+    '',
+    'Enviar saldo deudor:',
+    ...transferLines,
+  ].join('\n');
+}
+
 export default function HomeScreen({ navigation, route }: any) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [expenses, setExpenses] = useState<ExpenseView[]>([]);
   const [balances, setBalances] = useState<UserBalance[]>([]);
   const [transfers, setTransfers] = useState<SettlementTransfer[]>([]);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<UserView[]>([]);
+  const [groupDetails, setGroupDetails] = useState<GroupDetails | null>(null);
   const groupId = route?.params?.groupId;
   const groupName = route?.params?.groupName ?? 'Grupo';
+
+  const loadExpenses = async () => {
+    if (!groupId) {
+      setExpenses([]);
+      setUsers([]);
+      setUserNames({});
+      setBalances([]);
+      setTransfers([]);
+      return;
+    }
+
+    const [expenseData, userData, groupData] = await Promise.all([getExpensesByGroup(groupId), getUsersByGroup(groupId), getGroupById(groupId)]);
+    const nextUserNames = userData.reduce<Record<string, string>>((accumulator, user) => {
+      accumulator[user._id.toString()] = user.alias?.trim() || user.name;
+      return accumulator;
+    }, {});
+    const settlement = calculateSettlement(expenseData, userData);
+
+    setExpenses(expenseData);
+    setUsers(userData);
+    setGroupDetails(groupData);
+    setUserNames(nextUserNames);
+    setBalances(settlement.balances);
+    setTransfers(settlement.transfers);
+  };
 
   const totalAmount = useMemo(
     () => expenses.reduce((sum, expense) => sum + expense.amount, 0),
@@ -40,13 +139,49 @@ export default function HomeScreen({ navigation, route }: any) {
     [balances],
   );
 
-  const handleShareSettlement = async () => {
+  const handleShareSettlement = async (variant: SettlementMessageVariant) => {
     if (expenses.length === 0) {
       Alert.alert('Sin datos', 'Agregá al menos un gasto antes de compartir la liquidación.');
       return;
     }
 
-    const message = `${groupName}\n\n${formatSettlementMessage({ balances, transfers })}`;
+    const messageTitleByVariant: Record<SettlementMessageVariant, string> = {
+      full: 'Resumen completo',
+      'transfers-only': 'Liquidación sugerida',
+      short: 'Mensaje corto',
+    };
+    const message = variant === 'full'
+      ? buildDetailedGroupMessage(groupName, expenses, users, transfers, balances)
+      : `${groupName}\n\n${formatSettlementMessage({ balances, transfers }, variant)}`;
+    const groupWhatsappLink = groupDetails?.whatsappGroupLink?.trim();
+
+    if (groupWhatsappLink) {
+      try {
+        await Clipboard.setStringAsync(message);
+        Alert.alert(
+          'Mensaje listo',
+          `${message.slice(0, 220)}${message.length > 220 ? '...' : ''}`,
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Abrir grupo',
+              onPress: async () => {
+                try {
+                  await Linking.openURL(groupWhatsappLink);
+                } catch {
+                  Alert.alert('Error', 'No se pudo abrir el grupo de WhatsApp configurado.');
+                }
+              },
+            },
+          ],
+        );
+        return;
+      } catch {
+        Alert.alert('Error', 'No se pudo abrir el grupo de WhatsApp configurado.');
+        return;
+      }
+    }
+
     const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
 
     try {
@@ -57,37 +192,83 @@ export default function HomeScreen({ navigation, route }: any) {
         return;
       }
 
-      await Share.share({ message, title: 'Liquidación sugerida' });
+      await Share.share({ message, title: messageTitleByVariant[variant] });
     } catch {
       Alert.alert('Error', 'No se pudo compartir la liquidación.');
     }
   };
 
-  useEffect(() => {
-    const loadExpenses = async () => {
-      if (!groupId) {
-        setExpenses([]);
-        setUsers([]);
-        setUserNames({});
-        setBalances([]);
-        setTransfers([]);
+  const handleNotifyTransferByWhatsapp = async (transfer: SettlementTransfer) => {
+    const debtor = users.find(user => user._id.toString() === transfer.fromUserId);
+    const creditor = users.find(user => user._id.toString() === transfer.toUserId);
+    const normalizedPhone = normalizeWhatsappPhone(debtor?.phone);
+
+    if (!normalizedPhone) {
+      Alert.alert('Falta teléfono', `No hay un teléfono válido cargado para ${transfer.fromUserName}.`);
+      return;
+    }
+
+    const message = formatDirectTransferMessage(transfer, groupName, creditor?.paymentHandle?.trim());
+    const appUrl = `whatsapp://send?phone=${normalizedPhone}&text=${encodeURIComponent(message)}`;
+    const webUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
+
+    try {
+      const canOpenWhatsapp = await Linking.canOpenURL(appUrl);
+
+      if (canOpenWhatsapp) {
+        await Linking.openURL(appUrl);
         return;
       }
 
-      const [expenseData, userData] = await Promise.all([getExpensesByGroup(groupId), getUsersByGroup(groupId)]);
-      const nextUserNames = userData.reduce<Record<string, string>>((accumulator, user) => {
-        accumulator[user._id.toString()] = user.alias?.trim() || user.name;
-        return accumulator;
-      }, {});
-      const settlement = calculateSettlement(expenseData, userData);
+      await Linking.openURL(webUrl);
+    } catch {
+      Alert.alert('Error', 'No se pudo abrir WhatsApp para ese integrante.');
+    }
+  };
 
-      setExpenses(expenseData);
-      setUsers(userData);
-      setUserNames(nextUserNames);
-      setBalances(settlement.balances);
-      setTransfers(settlement.transfers);
-    };
+  const handleDeleteExpense = (expense: ExpenseView) => {
+    Alert.alert(
+      'Eliminar gasto',
+      `Se va a borrar ${expense.description} por $${expense.amount.toFixed(2)}.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteExpense(expense._id.toString());
+            await loadExpenses();
+            Alert.alert('Gasto eliminado', 'La liquidación del grupo se recalculó automáticamente.');
+          },
+        },
+      ],
+    );
+  };
 
+  const handleClearExpenses = () => {
+    if (!groupId) {
+      return;
+    }
+
+    Alert.alert(
+      'Limpiar gastos',
+      'Se van a borrar todos los gastos de este grupo. Los integrantes se conservan, pero la liquidación vuelve a cero.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Limpiar',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteExpensesByGroup(groupId);
+            await loadExpenses();
+            Alert.alert('Gastos limpiados', 'El grupo quedó listo para empezar una nueva ronda de gastos.');
+          },
+        },
+      ],
+    );
+  };
+
+  useEffect(() => {
     loadExpenses();
     const unsubscribe = navigation.addListener('focus', loadExpenses);
 
@@ -124,6 +305,20 @@ export default function HomeScreen({ navigation, route }: any) {
               <Text style={styles.breakdownValue}>${share.share.toFixed(2)}</Text>
             </View>
           ))}
+        </View>
+        <View style={styles.inlineActions}>
+          <Pressable
+            onPress={() => navigation.navigate('AddExpense', { groupId, groupName, expense: item })}
+            style={[styles.inlineActionButton, styles.inlineActionPrimary]}
+          >
+            <Text style={styles.inlineActionPrimaryText}>Editar gasto</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => handleDeleteExpense(item)}
+            style={[styles.inlineActionButton, styles.inlineActionDanger]}
+          >
+            <Text style={styles.inlineActionDangerText}>Eliminar gasto</Text>
+          </Pressable>
         </View>
       </View>
     );
@@ -165,8 +360,15 @@ export default function HomeScreen({ navigation, route }: any) {
           <View style={styles.actionsCard}>
             <Text style={styles.sectionHeading}>Acciones</Text>
             <CustomButton title="Agregar Gasto" onPress={() => navigation.navigate('AddExpense', { groupId, groupName })} />
-            <CustomButton title="Ver Integrantes" onPress={() => navigation.navigate('Users', { groupId, groupName })} color="#0f766e" />
-            <CustomButton title="Compartir liquidación" onPress={handleShareSettlement} color="#198754" />
+            <CustomButton title="Ver Integrantes" onPress={() => navigation.navigate('Users', { groupId, groupName })} color={colors.success} />
+          </View>
+
+          <View style={styles.actionsCard}>
+            <Text style={styles.sectionHeading}>Compartir</Text>
+            <Text style={styles.shareHint}>Elegí el formato que querés mandar por WhatsApp o por el share del sistema.</Text>
+            <CustomButton title="Compartir resumen completo" onPress={() => handleShareSettlement('full')} color="#198754" />
+            <CustomButton title="Compartir sólo transferencias" onPress={() => handleShareSettlement('transfers-only')} color="#0f766e" />
+            <CustomButton title="Compartir mensaje corto" onPress={() => handleShareSettlement('short')} color="#2563eb" />
           </View>
 
           <View style={styles.summaryCard}>
@@ -194,8 +396,18 @@ export default function HomeScreen({ navigation, route }: any) {
                 <View key={`${transfer.fromUserId}-${transfer.toUserId}-${index}`} style={styles.transferCard}>
                   <Text style={styles.transferText}>{transfer.fromUserName}</Text>
                   <Text style={styles.transferArrow}>paga a</Text>
-                  <Text style={styles.transferText}>{transfer.toUserName}</Text>
-                  <Text style={styles.transferAmount}>${transfer.amount.toFixed(2)}</Text>
+                  <View style={styles.transferBottomRow}>
+                    <View style={styles.transferAmountBlock}>
+                      <Text style={styles.transferText}>{transfer.toUserName}</Text>
+                      <Text style={styles.transferAmount}>${transfer.amount.toFixed(2)}</Text>
+                    </View>
+                    <Pressable
+                      onPress={() => handleNotifyTransferByWhatsapp(transfer)}
+                      style={styles.transferWhatsappButton}
+                    >
+                      <Text style={styles.transferWhatsappText}>WhatsApp</Text>
+                    </Pressable>
+                  </View>
                 </View>
               ))
             )}
@@ -204,6 +416,15 @@ export default function HomeScreen({ navigation, route }: any) {
           <Text style={styles.listHeading}>Gastos registrados</Text>
         </View>
       )}
+      ListFooterComponent={expenses.length > 0 ? (
+        <View style={styles.footerCard}>
+          <Text style={styles.sectionHeading}>Cierre del grupo</Text>
+          <Text style={styles.footerText}>
+            Cuando ya se liquidó todo y mandaste los mensajes, podés limpiar los gastos para arrancar una ronda nueva sin borrar el grupo.
+          </Text>
+          <CustomButton title="Limpiar gastos" onPress={handleClearExpenses} color={colors.danger} />
+        </View>
+      ) : null}
       ListEmptyComponent={(
         <View style={styles.emptyStateCard}>
           <Text style={styles.emptyStateTitle}>Todavía no hay gastos</Text>
@@ -216,106 +437,137 @@ export default function HomeScreen({ navigation, route }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f3f5f8' },
+const createStyles = (colors: AppPalette) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, paddingBottom: 32 },
   headerStack: { gap: 12, marginBottom: 16 },
   heroCard: {
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.hero,
     borderRadius: 20,
     padding: 20,
   },
   eyebrow: {
-    color: '#93c5fd',
+    color: colors.heroMuted,
     textTransform: 'uppercase',
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 8,
   },
-  title: { fontSize: 28, fontWeight: '700', color: '#f8fafc', marginBottom: 6 },
-  subtitle: { fontSize: 15, lineHeight: 22, color: '#cbd5e1' },
+  title: { fontSize: 28, fontWeight: '700', color: colors.textOnHero, marginBottom: 6 },
+  subtitle: { fontSize: 15, lineHeight: 22, color: colors.heroMuted },
   statsRow: { flexDirection: 'row', gap: 10 },
   statCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 14,
   },
-  statLabel: { color: '#64748b', fontSize: 13, marginBottom: 8 },
-  statValue: { color: '#111827', fontSize: 20, fontWeight: '700' },
+  statLabel: { color: colors.textMuted, fontSize: 13, marginBottom: 8 },
+  statValue: { color: colors.text, fontSize: 20, fontWeight: '700' },
   actionsCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 14,
   },
-  sectionHeading: { fontSize: 18, fontWeight: '700', color: '#0f172a', marginBottom: 6 },
+  shareHint: { color: colors.textMuted, lineHeight: 20, marginBottom: 6 },
+  sectionHeading: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },
   breakdownBox: {
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: colors.border,
   },
-  breakdownTitle: { fontWeight: '600', marginBottom: 6, color: '#222' },
+  breakdownTitle: { fontWeight: '600', marginBottom: 6, color: colors.text },
   breakdownRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
   },
-  breakdownName: { color: '#475569' },
-  breakdownValue: { color: '#111827', fontWeight: '600' },
+  breakdownName: { color: colors.textMuted },
+  breakdownValue: { color: colors.text, fontWeight: '600' },
   summaryCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 14,
   },
-  summaryEmpty: { color: '#666' },
+  summaryEmpty: { color: colors.textMuted },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#eef2f7',
+    borderBottomColor: colors.border,
   },
-  summaryName: { color: '#1f2937', fontWeight: '500' },
+  summaryName: { color: colors.text, fontWeight: '500' },
   summaryAmount: { fontWeight: '700' },
-  amountPositive: { color: '#15803d' },
-  amountNegative: { color: '#b91c1c' },
+  amountPositive: { color: colors.success },
+  amountNegative: { color: colors.danger },
   transferCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 12,
     padding: 12,
     marginTop: 8,
   },
-  transferText: { color: '#0f172a', fontWeight: '600' },
-  transferArrow: { color: '#64748b', marginVertical: 2 },
-  transferAmount: { color: '#166534', fontWeight: '700', marginTop: 4 },
-  listHeading: { fontSize: 20, fontWeight: '700', color: '#0f172a', marginTop: 4 },
+  transferText: { color: colors.text, fontWeight: '600' },
+  transferArrow: { color: colors.textMuted, marginVertical: 2 },
+  transferBottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, gap: 8 },
+  transferAmountBlock: { flex: 1 },
+  transferAmount: { color: colors.success, fontWeight: '700', marginTop: 4 },
+  transferWhatsappButton: {
+    borderWidth: 1,
+    borderColor: colors.success,
+    backgroundColor: colors.successSoft,
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  transferWhatsappText: { color: colors.success, fontWeight: '700' },
+  listHeading: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 4 },
   expenseSeparator: { height: 12 },
   expenseCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 14,
   },
   expenseHeader: { marginBottom: 8 },
   expenseTitleBlock: { marginBottom: 8 },
-  expenseTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  expenseAmount: { fontSize: 15, color: '#0f766e', fontWeight: '700', marginTop: 3 },
+  expenseTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
+  expenseAmount: { fontSize: 15, color: colors.success, fontWeight: '700', marginTop: 3 },
   payerBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#e0f2fe',
+    backgroundColor: colors.infoSoft,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 10,
   },
-  payerBadgeText: { color: '#0369a1', fontWeight: '600', fontSize: 12 },
-  expenseMeta: { color: '#475569', lineHeight: 20 },
+  payerBadgeText: { color: colors.info, fontWeight: '600', fontSize: 12 },
+  expenseMeta: { color: colors.textMuted, lineHeight: 20 },
+  inlineActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  inlineActionButton: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  inlineActionPrimary: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  inlineActionDanger: { borderColor: colors.danger, backgroundColor: colors.dangerSoft },
+  inlineActionPrimaryText: { color: colors.primary, fontWeight: '700' },
+  inlineActionDangerText: { color: colors.danger, fontWeight: '700' },
+  footerCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 16,
+  },
+  footerText: { color: colors.textMuted, lineHeight: 20, marginBottom: 6 },
   emptyStateCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 18,
   },
-  emptyStateTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a', marginBottom: 6 },
-  emptyStateText: { color: '#64748b', lineHeight: 21 },
+  emptyStateTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },
+  emptyStateText: { color: colors.textMuted, lineHeight: 21 },
 });

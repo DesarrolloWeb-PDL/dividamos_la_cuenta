@@ -1,33 +1,51 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert } from 'react-native';
 import CustomButton from '../components/CustomButton';
-import { addUser, getUsersByGroup } from '../services/userService';
+import { getPaymentHandleLabel, validatePaymentHandle } from '../services/paymentHandle';
+import { addUser, getUsersByGroup, updateUser } from '../services/userService';
+import { AppPalette, useAppTheme } from '../theme/appTheme';
 
 function normalizePhone(phone: string) {
   return phone.replace(/\D/g, '');
 }
 
 export default function AddUserScreen({ navigation, route }: any) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [alias, setAlias] = useState('');
+  const [paymentHandle, setPaymentHandle] = useState('');
   const groupId = route?.params?.groupId;
   const groupName = route?.params?.groupName ?? 'este grupo';
   const draftContact = route?.params?.draftContact;
   const draftToken = route?.params?.draftToken;
+  const existingUser = route?.params?.user;
+  const isEditing = Boolean(existingUser?._id);
+  const paymentHandleLabel = paymentHandle.trim() ? getPaymentHandleLabel(paymentHandle) : null;
 
   useEffect(() => {
+    if (existingUser) {
+      setName(existingUser.name ?? '');
+      setPhone(existingUser.phone ?? '');
+      setAlias(existingUser.alias ?? '');
+      setPaymentHandle(existingUser.paymentHandle ?? '');
+      return;
+    }
+
     if (draftContact) {
       setName(draftContact.name ?? '');
       setPhone(draftContact.phone ?? '');
       setAlias(draftContact.alias ?? '');
+      setPaymentHandle('');
       return;
     }
 
     setName('');
     setPhone('');
     setAlias('');
-  }, [draftContact, draftToken]);
+    setPaymentHandle('');
+  }, [draftContact, draftToken, existingUser]);
 
   const handleAdd = async () => {
     if (!groupId) {
@@ -42,10 +60,38 @@ export default function AddUserScreen({ navigation, route }: any) {
 
     const normalizedPhone = normalizePhone(phone);
     const groupUsers = await getUsersByGroup(groupId);
-    const duplicatedUser = groupUsers.find(user => normalizePhone(user.phone) === normalizedPhone);
+    const duplicatedUser = groupUsers.find(user => (
+      normalizePhone(user.phone) === normalizedPhone
+      && user._id.toString() !== existingUser?._id?.toString()
+    ));
 
     if (duplicatedUser) {
       Alert.alert('Duplicado', 'Ya existe un integrante en este grupo con ese teléfono.');
+      return;
+    }
+
+    const paymentHandleError = validatePaymentHandle(paymentHandle);
+
+    if (paymentHandleError) {
+      Alert.alert('Dato de cobro inválido', paymentHandleError);
+      return;
+    }
+
+    if (isEditing) {
+      const updatedUser = await updateUser(existingUser._id.toString(), {
+        name: name.trim(),
+        phone: phone.trim(),
+        alias: alias.trim(),
+        paymentHandle: paymentHandle.trim(),
+      });
+
+      if (!updatedUser) {
+        Alert.alert('Error', 'No se pudo actualizar el integrante.');
+        return;
+      }
+
+      Alert.alert('Éxito', 'Integrante actualizado');
+      navigation?.goBack && navigation.goBack();
       return;
     }
 
@@ -54,28 +100,32 @@ export default function AddUserScreen({ navigation, route }: any) {
       name: name.trim(),
       phone: phone.trim(),
       alias: alias.trim(),
+      paymentHandle: paymentHandle.trim(),
     });
     Alert.alert('Éxito', 'Usuario agregado');
     setName('');
     setPhone('');
     setAlias('');
+    setPaymentHandle('');
     navigation?.goBack && navigation.goBack();
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Agregar integrante</Text>
+      <Text style={styles.title}>{isEditing ? 'Editar integrante' : 'Agregar integrante'}</Text>
       <Text style={styles.subtitle}>Se suma a {groupName}.</Text>
-      {draftContact ? <Text style={styles.importedBadge}>Contacto importado del teléfono</Text> : null}
+      {draftContact && !isEditing ? <Text style={styles.importedBadge}>Contacto importado del teléfono</Text> : null}
       <TextInput
         style={styles.input}
         placeholder="Nombre"
+        placeholderTextColor={colors.textMuted}
         value={name}
         onChangeText={setName}
       />
       <TextInput
         style={styles.input}
         placeholder="Teléfono"
+        placeholderTextColor={colors.textMuted}
         value={phone}
         onChangeText={setPhone}
         keyboardType="phone-pad"
@@ -83,27 +133,39 @@ export default function AddUserScreen({ navigation, route }: any) {
       <TextInput
         style={styles.input}
         placeholder="Alias (opcional)"
+        placeholderTextColor={colors.textMuted}
         value={alias}
         onChangeText={setAlias}
       />
-      <CustomButton title="Agregar integrante" onPress={handleAdd} />
+      <TextInput
+        style={styles.input}
+        placeholder="Alias, CVU o link de cobro (opcional)"
+        placeholderTextColor={colors.textMuted}
+        value={paymentHandle}
+        onChangeText={setPaymentHandle}
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+      {paymentHandleLabel ? <Text style={styles.helperText}>Se detecta como {paymentHandleLabel.toLowerCase()}.</Text> : null}
+      <CustomButton title={isEditing ? 'Guardar cambios' : 'Agregar integrante'} onPress={handleAdd} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
-  subtitle: { color: '#475569', lineHeight: 20, marginBottom: 16 },
+const createStyles = (colors: AppPalette) => StyleSheet.create({
+  container: { flex: 1, padding: 16, backgroundColor: colors.background },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: colors.text },
+  subtitle: { color: colors.textMuted, lineHeight: 20, marginBottom: 16 },
   importedBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#dcfce7',
-    color: '#166534',
+    backgroundColor: colors.successSoft,
+    color: colors.success,
     fontWeight: '700',
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 10,
     marginBottom: 12,
   },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 10, marginBottom: 12 },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 10, marginBottom: 12, color: colors.text, backgroundColor: colors.surface },
+  helperText: { color: colors.textMuted, marginTop: -4, marginBottom: 12 },
 });

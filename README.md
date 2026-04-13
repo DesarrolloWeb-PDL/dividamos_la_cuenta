@@ -70,6 +70,27 @@ Configuración recomendada en Vercel:
 1. Framework preset: Other
 2. Build command: `npm run export:web`
 3. Output directory: `dist`
+4. El repo ya incluye [vercel.json](vercel.json) con la configuración mínima para servir la manifest web correctamente.
+
+## Instalar Como App Web
+
+La versión web se puede usar como PWA en el celular, o sea, agregarla a la pantalla de inicio para abrirla como si fuera una app.
+
+1. Publicá la versión web en HTTPS.
+2. Abrila desde Chrome en Android o Safari en iPhone.
+3. En Android: menú del navegador -> `Instalar app` o `Agregar a pantalla principal`.
+4. En iPhone: compartir -> `Agregar a pantalla de inicio`.
+
+### Publicación rápida en Vercel
+
+1. Importá el repo en Vercel.
+2. Usá `Other` como framework.
+3. Configurá `npm run export:web` como build command.
+4. Configurá `dist` como output directory.
+5. Publicá en HTTPS.
+6. Abrí esa URL desde el celular y usá la opción de instalar desde el navegador.
+
+Al instalarla, la app se abre en modo standalone y queda accesible desde el inicio del teléfono.
 
 Nota: esta app sigue siendo un proyecto Expo móvil primero. Vercel sirve para publicar la variante web, no la app nativa Android/iOS.
 

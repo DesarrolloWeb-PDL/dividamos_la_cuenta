@@ -27,3 +27,34 @@ export async function getUsersByGroup(groupId: string) {
   const users = await getAllUsers();
   return users.filter(user => user.groupId === groupId);
 }
+
+export async function updateUser(userId: string, updates: Pick<User, 'name' | 'phone' | 'alias' | 'paymentHandle'>) {
+  const users = await readCollection<StoredUser>(USERS_STORAGE_KEY);
+  const nextUsers = users.map(user => (
+    user._id.toString() === userId
+      ? {
+        ...user,
+        name: updates.name,
+        phone: updates.phone,
+        alias: updates.alias,
+        paymentHandle: updates.paymentHandle ?? '',
+      }
+      : user
+  ));
+
+  await writeCollection(USERS_STORAGE_KEY, nextUsers);
+
+  return nextUsers.find(user => user._id.toString() === userId) ?? null;
+}
+
+export async function deleteUser(userId: string) {
+  const users = await readCollection<StoredUser>(USERS_STORAGE_KEY);
+  const nextUsers = users.filter(user => user._id.toString() !== userId);
+  await writeCollection(USERS_STORAGE_KEY, nextUsers);
+}
+
+export async function deleteUsersByGroup(groupId: string) {
+  const users = await readCollection<StoredUser>(USERS_STORAGE_KEY);
+  const nextUsers = users.filter(user => user.groupId !== groupId);
+  await writeCollection(USERS_STORAGE_KEY, nextUsers);
+}

@@ -7,4 +7,5 @@ export type Group = {
   name: string;
   description: string;
   createdAt: Date | string;
+  whatsappGroupLink?: string;
 };

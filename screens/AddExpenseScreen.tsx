@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, Pressable, ScrollView } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, TextInput, StyleSheet, Alert, Pressable, ScrollView } from 'react-native';
 import { getUsersByGroup } from '../services/userService';
-import { addExpense } from '../services/expenseService';
+import { addExpense, updateExpense } from '../services/expenseService';
+import CustomButton from '../components/CustomButton';
+import { calculateExpenseBreakdown } from '../services/settlementService';
+import { AppPalette, useAppTheme } from '../theme/appTheme';
 
 type SelectableUser = {
   id: string;
@@ -10,7 +13,15 @@ type SelectableUser = {
   alias: string;
 };
 
+type ExpensePreview = {
+  paymentSummary: Array<{ userId: string; userName: string; amount: number }>;
+  shares: Array<{ userId: string; userName: string; share: number }>;
+  isCustom: boolean;
+};
+
 export default function AddExpenseScreen({ navigation, route }: any) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [users, setUsers] = useState<SelectableUser[]>([]);
@@ -18,8 +29,11 @@ export default function AddExpenseScreen({ navigation, route }: any) {
   const [payments, setPayments] = useState<Record<string, string>>({});
   const [splitMode, setSplitMode] = useState<'equal' | 'custom'>('equal');
   const [participantAmounts, setParticipantAmounts] = useState<Record<string, string>>({});
+  const [preview, setPreview] = useState<ExpensePreview | null>(null);
   const groupId = route?.params?.groupId;
   const groupName = route?.params?.groupName ?? 'este grupo';
+  const existingExpense = route?.params?.expense;
+  const isEditing = Boolean(existingExpense?._id);
   const totalPaid = Object.values(payments).reduce((sum, value) => {
     const parsedValue = Number(value.replace(',', '.'));
     return sum + (Number.isNaN(parsedValue) ? 0 : parsedValue);
@@ -51,6 +65,124 @@ export default function AddExpenseScreen({ navigation, route }: any) {
 
     return unsubscribe;
   }, [groupId, navigation]);
+
+  useEffect(() => {
+    if (!existingExpense) {
+      setDescription('');
+      setAmount('');
+      setParticipants([]);
+      setPayments({});
+      setSplitMode('equal');
+      setParticipantAmounts({});
+      setPreview(null);
+      return;
+    }
+
+    setDescription(existingExpense.description ?? '');
+    setAmount(String(existingExpense.amount ?? ''));
+    setParticipants(existingExpense.participants ?? []);
+    setPayments(
+      (existingExpense.payments ?? []).reduce((accumulator: Record<string, string>, payment: { userId: string; amount: number }) => {
+        accumulator[payment.userId] = String(payment.amount);
+        return accumulator;
+      }, {}),
+    );
+
+    const hasCustomSplit = Array.isArray(existingExpense.participantAmounts)
+      && existingExpense.participantAmounts.length === existingExpense.participants.length
+      && existingExpense.participantAmounts.length > 0;
+
+    setSplitMode(hasCustomSplit ? 'custom' : 'equal');
+    setParticipantAmounts(
+      hasCustomSplit
+        ? existingExpense.participants.reduce((accumulator: Record<string, string>, participantId: string, index: number) => {
+          accumulator[participantId] = String(existingExpense.participantAmounts[index]);
+          return accumulator;
+        }, {})
+        : {},
+    );
+    setPreview(null);
+  }, [existingExpense]);
+
+  useEffect(() => {
+    setPreview(null);
+  }, [description, amount, participants, payments, splitMode, participantAmounts]);
+
+  const buildExpenseDraft = () => {
+    if (!groupId) {
+      Alert.alert('Error', 'No se encontró el grupo para registrar el gasto.');
+      return null;
+    }
+
+    const parsedAmount = Number(amount.replace(',', '.'));
+
+    if (!description.trim() || !amount.trim()) {
+      Alert.alert('Error', 'Completá descripcion y monto');
+      return null;
+    }
+
+    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+      Alert.alert('Error', 'Ingresá un monto válido');
+      return null;
+    }
+
+    if (participants.length === 0) {
+      Alert.alert('Error', 'Seleccioná al menos un participante');
+      return null;
+    }
+
+    const selectedPayers = Object.entries(payments)
+      .map(([userId, value]) => ({
+        userId,
+        amount: Number(value.replace(',', '.')),
+      }));
+
+    if (selectedPayers.length === 0) {
+      Alert.alert('Error', 'Seleccioná al menos una persona que haya pagado');
+      return null;
+    }
+
+    if (selectedPayers.some(payment => Number.isNaN(payment.amount) || payment.amount <= 0)) {
+      Alert.alert('Error', 'Completá montos válidos para quienes pagaron');
+      return null;
+    }
+
+    const paidTotal = selectedPayers.reduce((sum, payment) => sum + payment.amount, 0);
+
+    if (Math.round(paidTotal * 100) !== Math.round(parsedAmount * 100)) {
+      Alert.alert('Error', 'La suma de los pagos tiene que coincidir con el total del gasto');
+      return null;
+    }
+
+    const normalizedParticipantAmounts = splitMode === 'custom'
+      ? participants.map(participantId => Number((participantAmounts[participantId] ?? '').replace(',', '.')))
+      : [];
+
+    if (splitMode === 'custom') {
+      const hasInvalidCustomAmount = normalizedParticipantAmounts.some(customAmount => Number.isNaN(customAmount) || customAmount <= 0);
+
+      if (hasInvalidCustomAmount) {
+        Alert.alert('Error', 'Completá montos válidos para cada participante');
+        return null;
+      }
+
+      const customTotal = normalizedParticipantAmounts.reduce((sum, customAmount) => sum + customAmount, 0);
+
+      if (Math.round(customTotal * 100) !== Math.round(parsedAmount * 100)) {
+        Alert.alert('Error', 'La suma de montos personalizados tiene que coincidir con el total');
+        return null;
+      }
+    }
+
+    return {
+      groupId,
+      description: description.trim(),
+      amount: parsedAmount,
+      participants,
+      participantAmounts: normalizedParticipantAmounts,
+      payments: selectedPayers,
+    };
+  };
 
   const toggleParticipant = (userId: string) => {
     setParticipants(currentParticipants => {
@@ -105,80 +237,53 @@ export default function AddExpenseScreen({ navigation, route }: any) {
     }));
   };
 
+  const handleCalculateSplit = () => {
+    const draftExpense = buildExpenseDraft();
+
+    if (!draftExpense) {
+      return;
+    }
+
+    const previewUsers = users.map(user => ({
+      _id: user.id,
+      name: user.name,
+      alias: user.alias,
+    }));
+
+    const calculatedPreview = calculateExpenseBreakdown(draftExpense, previewUsers);
+
+    setPreview({
+      ...calculatedPreview,
+      isCustom: Boolean(calculatedPreview.isCustom),
+    });
+  };
+
   const handleAdd = async () => {
-    if (!groupId) {
-      Alert.alert('Error', 'No se encontró el grupo para registrar el gasto.');
+    const draftExpense = buildExpenseDraft();
+
+    if (!draftExpense) {
       return;
     }
 
-    const parsedAmount = Number(amount.replace(',', '.'));
+    if (isEditing) {
+      const updatedExpense = await updateExpense(existingExpense._id.toString(), {
+        ...draftExpense,
+        date: existingExpense.date ?? new Date(),
+      });
 
-    if (!description.trim() || !amount.trim()) {
-      Alert.alert('Error', 'Completá descripcion y monto');
-      return;
-    }
-
-    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-      Alert.alert('Error', 'Ingresá un monto válido');
-      return;
-    }
-
-    if (participants.length === 0) {
-      Alert.alert('Error', 'Seleccioná al menos un participante');
-      return;
-    }
-
-    const selectedPayers = Object.entries(payments)
-      .map(([userId, value]) => ({
-        userId,
-        amount: Number(value.replace(',', '.')),
-      }));
-
-    if (selectedPayers.length === 0) {
-      Alert.alert('Error', 'Seleccioná al menos una persona que haya pagado');
-      return;
-    }
-
-    if (selectedPayers.some(payment => Number.isNaN(payment.amount) || payment.amount <= 0)) {
-      Alert.alert('Error', 'Completá montos válidos para quienes pagaron');
-      return;
-    }
-
-    const totalPaid = selectedPayers.reduce((sum, payment) => sum + payment.amount, 0);
-
-    if (Math.round(totalPaid * 100) !== Math.round(parsedAmount * 100)) {
-      Alert.alert('Error', 'La suma de los pagos tiene que coincidir con el total del gasto');
-      return;
-    }
-
-    const normalizedParticipantAmounts = splitMode === 'custom'
-      ? participants.map(participantId => Number((participantAmounts[participantId] ?? '').replace(',', '.')))
-      : [];
-
-    if (splitMode === 'custom') {
-      const hasInvalidCustomAmount = normalizedParticipantAmounts.some(customAmount => Number.isNaN(customAmount) || customAmount <= 0);
-
-      if (hasInvalidCustomAmount) {
-        Alert.alert('Error', 'Completá montos válidos para cada participante');
+      if (!updatedExpense) {
+        Alert.alert('Error', 'No se pudo actualizar el gasto.');
         return;
       }
 
-      const customTotal = normalizedParticipantAmounts.reduce((sum, customAmount) => sum + customAmount, 0);
-
-      if (Math.round(customTotal * 100) !== Math.round(parsedAmount * 100)) {
-        Alert.alert('Error', 'La suma de montos personalizados tiene que coincidir con el total');
-        return;
-      }
+      Alert.alert('Éxito', 'Gasto actualizado');
+      navigation?.goBack && navigation.goBack();
+      return;
     }
 
     await addExpense({
-      groupId,
-      description: description.trim(),
-      amount: parsedAmount,
+      ...draftExpense,
       date: new Date(),
-      participants,
-      participantAmounts: normalizedParticipantAmounts,
-      payments: selectedPayers,
     });
     Alert.alert('Éxito', 'Gasto agregado');
     setDescription('');
@@ -187,12 +292,13 @@ export default function AddExpenseScreen({ navigation, route }: any) {
     setPayments({});
     setSplitMode('equal');
     setParticipantAmounts({});
+    setPreview(null);
     navigation?.goBack && navigation.goBack();
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Agregar Gasto</Text>
+      <Text style={styles.title}>{isEditing ? 'Editar gasto' : 'Agregar gasto'}</Text>
       <Text style={styles.subtitle}>Grupo: {groupName}</Text>
       <View style={styles.infoCard}>
         <Text style={styles.infoTitle}>Cómo cargar este gasto</Text>
@@ -203,12 +309,14 @@ export default function AddExpenseScreen({ navigation, route }: any) {
       <TextInput
         style={styles.input}
         placeholder="Descripción"
+        placeholderTextColor={colors.textMuted}
         value={description}
         onChangeText={setDescription}
       />
       <TextInput
         style={styles.input}
         placeholder="Monto"
+        placeholderTextColor={colors.textMuted}
         value={amount}
         onChangeText={setAmount}
         keyboardType="numeric"
@@ -242,11 +350,16 @@ export default function AddExpenseScreen({ navigation, route }: any) {
           <Text style={styles.statusValue}>${totalAssigned.toFixed(2)}</Text>
         </View>
       ) : null}
+      <View style={styles.calculationCard}>
+        <Text style={styles.calculationTitle}>División del gasto</Text>
+        <Text style={styles.calculationText}>Primero calculá para revisar el reparto y después recién guardá el gasto.</Text>
+        <CustomButton title="Calcular división" onPress={handleCalculateSplit} color="#7c3aed" />
+      </View>
       <Text style={styles.sectionTitle}>Integrantes y pagos</Text>
       {users.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>Primero necesitás cargar integrantes en este grupo para registrar un gasto.</Text>
-          <Button title="Ir a integrantes" onPress={() => navigation.navigate('Users', { groupId, groupName })} />
+          <CustomButton title="Ir a integrantes" onPress={() => navigation.navigate('Users', { groupId, groupName })} color={colors.primary} />
         </View>
       ) : (
         users.map(user => {
@@ -282,6 +395,7 @@ export default function AddExpenseScreen({ navigation, route }: any) {
                 <TextInput
                   style={styles.amountInput}
                   placeholder="Monto que pagó esta persona"
+                  placeholderTextColor={colors.textMuted}
                   value={payments[user.id] ?? ''}
                   onChangeText={value => handlePaymentAmountChange(user.id, value)}
                   keyboardType="numeric"
@@ -291,6 +405,7 @@ export default function AddExpenseScreen({ navigation, route }: any) {
                 <TextInput
                   style={styles.amountInput}
                   placeholder="Monto que consume esta persona"
+                  placeholderTextColor={colors.textMuted}
                   value={participantAmounts[user.id] ?? ''}
                   onChangeText={value => handleParticipantAmountChange(user.id, value)}
                   keyboardType="numeric"
@@ -300,79 +415,134 @@ export default function AddExpenseScreen({ navigation, route }: any) {
           );
         })
       )}
-      <Button title="Agregar" onPress={handleAdd} />
+      {preview ? (
+        <View style={styles.previewCard}>
+          <Text style={styles.previewTitle}>Vista previa</Text>
+          <Text style={styles.previewSubtitle}>
+            {preview.isCustom ? 'División personalizada' : 'División igualitaria'}
+          </Text>
+          <Text style={styles.previewSectionTitle}>Pagos</Text>
+          {preview.paymentSummary.map(payment => (
+            <View key={payment.userId} style={styles.previewRow}>
+              <Text style={styles.previewName}>{payment.userName}</Text>
+              <Text style={styles.previewValue}>${payment.amount.toFixed(2)}</Text>
+            </View>
+          ))}
+          <Text style={styles.previewSectionTitle}>Consumo</Text>
+          {preview.shares.map(share => (
+            <View key={share.userId} style={styles.previewRow}>
+              <Text style={styles.previewName}>{share.userName}</Text>
+              <Text style={styles.previewValue}>${share.share.toFixed(2)}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+      <CustomButton title={isEditing ? 'Guardar gasto' : 'Agregar gasto'} onPress={handleAdd} color={colors.success} />
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: '#fff', flexGrow: 1 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
-  subtitle: { color: '#475569', marginBottom: 16 },
+const createStyles = (colors: AppPalette) => StyleSheet.create({
+  container: { padding: 16, backgroundColor: colors.background, flexGrow: 1 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 8, color: colors.text },
+  subtitle: { color: colors.textMuted, marginBottom: 16 },
   infoCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     padding: 12,
     marginBottom: 16,
   },
-  infoTitle: { fontSize: 15, fontWeight: '700', color: '#0f172a', marginBottom: 6 },
-  infoText: { color: '#475569', lineHeight: 20 },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 10, marginBottom: 12 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8, marginTop: 8 },
+  infoTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 6 },
+  infoText: { color: colors.textMuted, lineHeight: 20 },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 10, marginBottom: 12, color: colors.text, backgroundColor: colors.surface },
+  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8, marginTop: 8, color: colors.text },
   statusCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
   },
-  statusLabel: { color: '#475569', fontWeight: '600' },
-  statusValue: { color: '#0f766e', fontWeight: '700' },
+  statusLabel: { color: colors.textMuted, fontWeight: '600' },
+  statusValue: { color: colors.success, fontWeight: '700' },
+  calculationCard: {
+    backgroundColor: colors.surfaceAccent,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 12,
+    marginBottom: 12,
+  },
+  calculationTitle: { fontSize: 16, fontWeight: '700', color: colors.warning, marginBottom: 4 },
+  calculationText: { color: colors.textMuted, lineHeight: 20 },
   emptyState: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
     gap: 12,
+    backgroundColor: colors.surface,
   },
-  emptyText: { color: '#555', lineHeight: 20 },
+  emptyText: { color: colors.textMuted, lineHeight: 20 },
   userCard: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
+    backgroundColor: colors.surface,
   },
   userInfo: { marginBottom: 10 },
-  userName: { fontSize: 16, fontWeight: '600' },
-  userPhone: { color: '#666', marginTop: 2 },
+  userName: { fontSize: 16, fontWeight: '600', color: colors.text },
+  userPhone: { color: colors.textMuted, marginTop: 2 },
   actionsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   amountInput: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
     borderRadius: 6,
     padding: 10,
     marginTop: 10,
+    color: colors.text,
+    backgroundColor: colors.surfaceMuted,
   },
   selectorButton: {
     borderWidth: 1,
-    borderColor: '#0d6efd',
+    borderColor: colors.primary,
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 12,
+    backgroundColor: colors.surface,
   },
   selectorButtonActive: {
-    backgroundColor: '#0d6efd',
+    backgroundColor: colors.primary,
   },
   payerButtonActive: {
-    backgroundColor: '#198754',
-    borderColor: '#198754',
+    backgroundColor: colors.success,
+    borderColor: colors.success,
   },
-  selectorText: { color: '#0d6efd', fontWeight: '600' },
+  previewCard: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 12,
+    marginBottom: 12,
+  },
+  previewTitle: { fontSize: 17, fontWeight: '700', color: colors.text, marginBottom: 4 },
+  previewSubtitle: { color: colors.textMuted, marginBottom: 10 },
+  previewSectionTitle: { color: colors.text, fontWeight: '700', marginTop: 8, marginBottom: 6 },
+  previewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  previewName: { color: colors.textMuted },
+  previewValue: { color: colors.text, fontWeight: '700' },
+  selectorText: { color: colors.primary, fontWeight: '600' },
   selectorTextActive: { color: '#fff' },
 });

@@ -1,3 +1,5 @@
+import { formatPaymentHandleForMessage } from './paymentHandle';
+
 type PaymentLike = {
   userId: string;
   amount: number;
@@ -34,6 +36,8 @@ export type SettlementSummary = {
   balances: UserBalance[];
   transfers: SettlementTransfer[];
 };
+
+export type SettlementMessageVariant = 'full' | 'transfers-only' | 'short';
 
 export type ExpenseShareDetail = {
   userId: string;
@@ -189,7 +193,7 @@ export function calculateSettlement(expenses: ExpenseLike[], users: UserLike[]):
   };
 }
 
-export function formatSettlementMessage(summary: SettlementSummary) {
+export function formatSettlementMessage(summary: SettlementSummary, variant: SettlementMessageVariant = 'full') {
   const balanceLines = summary.balances.length === 0
     ? ['- No hay saldos pendientes.']
     : summary.balances.map(balance => (
@@ -202,6 +206,23 @@ export function formatSettlementMessage(summary: SettlementSummary) {
       `- ${transfer.fromUserName} le paga a ${transfer.toUserName} $${transfer.amount.toFixed(2)}`
     ));
 
+  if (variant === 'transfers-only') {
+    return [
+      'Liquidación sugerida:',
+      ...transferLines,
+    ].join('\n');
+  }
+
+  if (variant === 'short') {
+    if (summary.transfers.length === 0) {
+      return 'No hay transferencias pendientes.';
+    }
+
+    return summary.transfers
+      .map(transfer => `${transfer.fromUserName} -> ${transfer.toUserName} $${transfer.amount.toFixed(2)}`)
+      .join('\n');
+  }
+
   return [
     'Resumen de cuentas',
     '',
@@ -211,4 +232,15 @@ export function formatSettlementMessage(summary: SettlementSummary) {
     'Liquidación sugerida:',
     ...transferLines,
   ].join('\n');
+}
+
+export function formatDirectTransferMessage(transfer: SettlementTransfer, groupName: string, paymentHandle?: string) {
+  return [
+    `Hola ${transfer.fromUserName},`,
+    '',
+    `en ${groupName} te toca transferir $${transfer.amount.toFixed(2)} a ${transfer.toUserName}.`,
+    formatPaymentHandleForMessage(paymentHandle),
+    '',
+    'Te paso este mensaje para que lo tengas a mano.',
+  ].filter(Boolean).join('\n');
 }
