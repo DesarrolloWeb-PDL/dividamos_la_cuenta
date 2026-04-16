@@ -96,6 +96,10 @@
    Resultado esperado: el modo elegido se mantiene al volver a abrir.
 11. Abrí la versión web publicada desde el navegador del celular y usá `Agregar a pantalla de inicio`.
    Resultado esperado: la app queda instalable y se abre en modo standalone desde el acceso directo.
+12. Verificá el acceso directo instalado en la pantalla de inicio del celular.
+   Resultado esperado: el icono usa la identidad visual de Dividamos CTA y no un favicon genérico del navegador.
+13. Abrí la app instalada y volvé a cerrarla desde multitarea.
+   Resultado esperado: al reabrirla sigue entrando sin barra visible de navegador o con mínima UI según soporte del sistema.
 
 ## Qué revisar visualmente
 

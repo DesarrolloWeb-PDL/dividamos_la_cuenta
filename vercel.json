@@ -1,6 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "cleanUrls": false,
+  "buildCommand": "npm run export:web",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "framework": null,
+  "devCommand": "expo",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/:path*",
+      "destination": "/"
+    }
+  ],
   "headers": [
     {
       "source": "/manifest.json",

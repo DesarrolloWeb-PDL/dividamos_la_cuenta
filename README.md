@@ -70,7 +70,9 @@ Configuración recomendada en Vercel:
 1. Framework preset: Other
 2. Build command: `npm run export:web`
 3. Output directory: `dist`
-4. El repo ya incluye [vercel.json](vercel.json) con la configuración mínima para servir la manifest web correctamente.
+4. Install command: `npm install`.
+5. El repo ya incluye [vercel.json](vercel.json) con la configuración mínima para servir la manifest web correctamente.
+6. La carpeta `public/` aporta la PWA instalada: `manifest.json`, `apple-touch-icon.png`, `icon-192.png` e `icon-512.png`.
 
 ## Instalar Como App Web
 
@@ -87,10 +89,17 @@ La versión web se puede usar como PWA en el celular, o sea, agregarla a la pant
 2. Usá `Other` como framework.
 3. Configurá `npm run export:web` como build command.
 4. Configurá `dist` como output directory.
-5. Publicá en HTTPS.
-6. Abrí esa URL desde el celular y usá la opción de instalar desde el navegador.
+5. Dejá `npm install` como install command si Vercel te lo pide.
+6. Publicá en HTTPS.
+7. Abrí esa URL desde el celular y usá la opción de instalar desde el navegador.
 
-Al instalarla, la app se abre en modo standalone y queda accesible desde el inicio del teléfono.
+Al instalarla, la app se abre en modo standalone, usa icono propio y queda accesible desde el inicio del teléfono.
+
+### Qué ya quedó preparado
+
+- Manifest PWA enlazada desde `public/index.html`.
+- Iconos dedicados para Android/Chrome (`192x192`, `512x512`) y acceso directo de iPhone (`apple-touch-icon`).
+- Meta tags para mejorar apertura standalone en navegadores móviles.
 
 Nota: esta app sigue siendo un proyecto Expo móvil primero. Vercel sirve para publicar la variante web, no la app nativa Android/iOS.
 
