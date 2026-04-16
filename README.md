@@ -73,6 +73,7 @@ Configuración recomendada en Vercel:
 4. Install command: `npm install`.
 5. El repo ya incluye [vercel.json](vercel.json) con la configuración mínima para servir la manifest web correctamente.
 6. La carpeta `public/` aporta la PWA instalada: `manifest.json`, `apple-touch-icon.png`, `icon-192.png` e `icon-512.png`.
+7. Si volvés a definir favicon web en [app.json](app.json), usá un archivo raster (`.png` o `.ico`). Expo no exporta favicon SVG y la build falla.
 
 ## Instalar Como App Web
 
