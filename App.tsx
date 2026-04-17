@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler';
 import * as React from 'react';
+import { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AddGroupScreen from './screens/AddGroupScreen';
@@ -8,6 +9,7 @@ import HomeScreen from './screens/HomeScreen';
 import AddExpenseScreen from './screens/AddExpenseScreen';
 import UsersScreen from './screens/UsersScreen';
 import AddUserScreen from './screens/AddUserScreen';
+import { registerWebPwa } from './services/pwaInstallService';
 import { ThemeProvider, useAppTheme } from './theme/appTheme';
 
 const Stack = createNativeStackNavigator();
@@ -53,6 +55,10 @@ function AppNavigator() {
 }
 
 export default function App() {
+  useEffect(() => {
+    registerWebPwa();
+  }, []);
+
   return (
     <ThemeProvider>
       <AppNavigator />

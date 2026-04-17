@@ -3,6 +3,7 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native
 import CustomButton from '../components/CustomButton';
 import { deleteExpensesByGroup, getAllExpenses } from '../services/expenseService';
 import { deleteGroup, getAllGroups } from '../services/groupService';
+import { promptPwaInstall, subscribeToPwaInstallState, type PwaInstallState } from '../services/pwaInstallService';
 import { deleteUsersByGroup, getAllUsers } from '../services/userService';
 import { AppPalette, useAppTheme } from '../theme/appTheme';
 
@@ -18,6 +19,12 @@ export default function GroupsScreen({ navigation }: any) {
   const [groups, setGroups] = useState<GroupView[]>([]);
   const [memberCountByGroup, setMemberCountByGroup] = useState<Record<string, number>>({});
   const [expenseCountByGroup, setExpenseCountByGroup] = useState<Record<string, number>>({});
+  const [pwaInstallState, setPwaInstallState] = useState<PwaInstallState>({
+    supported: false,
+    installed: false,
+    canInstall: false,
+    instructions: null,
+  });
 
   const loadGroups = async () => {
     const [groupData, userData, expenseData] = await Promise.all([
@@ -73,12 +80,29 @@ export default function GroupsScreen({ navigation }: any) {
     );
   };
 
+  const handleInstallApp = async () => {
+    const wasInstalled = await promptPwaInstall();
+
+    if (wasInstalled) {
+      Alert.alert('App instalada', 'Ahora podés abrir Dividamos desde la pantalla de inicio.');
+      return;
+    }
+
+    if (pwaInstallState.instructions) {
+      Alert.alert('Instalar app', pwaInstallState.instructions);
+    }
+  };
+
   useEffect(() => {
     loadGroups();
     const unsubscribe = navigation.addListener('focus', loadGroups);
 
     return unsubscribe;
   }, [navigation]);
+
+  useEffect(() => {
+    return subscribeToPwaInstallState(setPwaInstallState);
+  }, []);
 
   return (
     <FlatList
@@ -146,6 +170,21 @@ export default function GroupsScreen({ navigation }: any) {
             <Text style={styles.sectionHeading}>Empezar</Text>
             <CustomButton title="Crear nuevo grupo" onPress={() => navigation.navigate('AddGroup')} />
           </View>
+          {pwaInstallState.supported && !pwaInstallState.installed ? (
+            <View style={styles.installCard}>
+              <Text style={styles.sectionHeading}>Instalar app</Text>
+              <Text style={styles.installText}>
+                {pwaInstallState.canInstall
+                  ? 'Si la abriste desde el celular, ya podés instalarla y usarla como acceso directo.'
+                  : pwaInstallState.instructions}
+              </Text>
+              <CustomButton
+                title={pwaInstallState.canInstall ? 'Instalar en este dispositivo' : 'Ver cómo instalarla'}
+                onPress={handleInstallApp}
+                color="#0f766e"
+              />
+            </View>
+          ) : null}
         </View>
       )}
       ListEmptyComponent={(
@@ -196,6 +235,14 @@ const createStyles = (colors: AppPalette) => StyleSheet.create({
     borderRadius: 16,
     padding: 14,
   },
+  installCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.success,
+  },
+  installText: { color: colors.textMuted, lineHeight: 20 },
   sectionHeading: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },
   separator: { height: 12 },
   groupCard: {
