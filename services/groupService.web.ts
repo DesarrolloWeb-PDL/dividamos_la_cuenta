@@ -1,4 +1,5 @@
 import { Group } from '../models/Group';
+import { didCollectionChange, normalizeEntityId } from './entityId';
 import { createWebId, readCollection, writeCollection } from './webStore.web';
 
 const GROUPS_STORAGE_KEY = 'dividamos-cta-groups';
@@ -8,8 +9,26 @@ type StoredGroup = Omit<Group, '_id'> & {
   createdAt: string;
 };
 
-export async function addGroup(group: Omit<Group, '_id'>) {
+function normalizeStoredGroup(group: StoredGroup): StoredGroup {
+  return {
+    ...group,
+    _id: normalizeEntityId(group._id),
+  };
+}
+
+async function readGroups() {
   const groups = await readCollection<StoredGroup>(GROUPS_STORAGE_KEY);
+  const normalizedGroups = groups.map(normalizeStoredGroup);
+
+  if (didCollectionChange(groups, normalizedGroups)) {
+    await writeCollection(GROUPS_STORAGE_KEY, normalizedGroups);
+  }
+
+  return normalizedGroups;
+}
+
+export async function addGroup(group: Omit<Group, '_id'>) {
+  const groups = await readGroups();
   const createdGroup: StoredGroup = {
     ...group,
     _id: createWebId(),
@@ -22,18 +41,20 @@ export async function addGroup(group: Omit<Group, '_id'>) {
 }
 
 export async function getAllGroups() {
-  return readCollection<StoredGroup>(GROUPS_STORAGE_KEY);
+  return readGroups();
 }
 
 export async function getGroupById(groupId: string) {
   const groups = await getAllGroups();
-  return groups.find(group => group._id.toString() === groupId) ?? null;
+  const normalizedGroupId = normalizeEntityId(groupId);
+  return groups.find(group => group._id === normalizedGroupId) ?? null;
 }
 
 export async function updateGroup(groupId: string, updates: Pick<Group, 'name' | 'description' | 'whatsappGroupLink'>) {
-  const groups = await readCollection<StoredGroup>(GROUPS_STORAGE_KEY);
+  const groups = await readGroups();
+  const normalizedGroupId = normalizeEntityId(groupId);
   const nextGroups = groups.map(group => (
-    group._id.toString() === groupId
+    group._id === normalizedGroupId
       ? {
         ...group,
         name: updates.name,
@@ -45,11 +66,12 @@ export async function updateGroup(groupId: string, updates: Pick<Group, 'name' |
 
   await writeCollection(GROUPS_STORAGE_KEY, nextGroups);
 
-  return nextGroups.find(group => group._id.toString() === groupId) ?? null;
+  return nextGroups.find(group => group._id === normalizedGroupId) ?? null;
 }
 
 export async function deleteGroup(groupId: string) {
-  const groups = await readCollection<StoredGroup>(GROUPS_STORAGE_KEY);
-  const nextGroups = groups.filter(group => group._id.toString() !== groupId);
+  const groups = await readGroups();
+  const normalizedGroupId = normalizeEntityId(groupId);
+  const nextGroups = groups.filter(group => group._id !== normalizedGroupId);
   await writeCollection(GROUPS_STORAGE_KEY, nextGroups);
 }
