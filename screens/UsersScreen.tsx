@@ -81,7 +81,7 @@ export default function UsersScreen({ navigation, route }: any) {
     }
 
     if (result.status === 'unsupported') {
-      Alert.alert('No disponible', 'La importación de contactos está disponible sólo en la app móvil.');
+      Alert.alert('No disponible', 'Este navegador no permite elegir contactos. En Chrome para Android sí debería funcionar y, si no, podés cargar el integrante manualmente.');
       return;
     }
 
@@ -111,7 +111,7 @@ export default function UsersScreen({ navigation, route }: any) {
       <Text style={styles.subtitle}>{groupName}</Text>
       <CustomButton title="Agregar integrante" onPress={() => navigateToAddUser(null)} />
       <CustomButton title="Importar desde contactos" onPress={handleImportContact} color="#198754" />
-      <Text style={styles.helperText}>En web vas a ver un fallback. La importación real funciona en Android y iPhone.</Text>
+      <Text style={styles.helperText}>En Android nativo funciona con la agenda del teléfono. En Chrome para Android, si el navegador lo soporta, también podés elegir un contacto.</Text>
       <FlatList
         data={users}
         keyExtractor={item => item._id.toString()}

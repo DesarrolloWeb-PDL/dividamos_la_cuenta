@@ -33,43 +33,45 @@
    Resultado esperado: la lista muestra alias o nombre sin reiniciar la app.
 9. Si probás desde Android o iPhone, usá Importar desde contactos.
    Resultado esperado: al elegir un contacto con teléfono, el formulario de alta se abre precargado.
-10. Intentá editar un integrante y cambiar nombre, alias o teléfono.
+10. Si probás desde Chrome en Android, usá también Importar desde contactos en la versión web publicada.
+   Resultado esperado: si Chrome expone el selector de contactos, la app deja elegir uno y precarga el formulario.
+11. Intentá editar un integrante y cambiar nombre, alias o teléfono.
    Resultado esperado: la lista refleja los cambios al volver.
-11. Cargá alias o link de cobro en un integrante.
+12. Cargá alias o link de cobro en un integrante.
    Resultado esperado: ese dato queda guardado y luego aparece en los mensajes de transferencia.
-12. Intentá guardar un contacto cuyo teléfono ya exista en el grupo.
+13. Intentá guardar un contacto cuyo teléfono ya exista en el grupo.
    Resultado esperado: la app avisa que ya existe un integrante con ese teléfono.
-13. Intentá eliminar un integrante sin gastos asociados.
+14. Intentá eliminar un integrante sin gastos asociados.
    Resultado esperado: la app pide confirmación y luego lo elimina.
-14. Si ese integrante participa en gastos, intentá eliminarlo.
+15. Si ese integrante participa en gastos, intentá eliminarlo.
     Resultado esperado: la app bloquea la acción y explica que primero hay que borrar esos gastos.
-15. Volvé al resumen del grupo.
+16. Volvé al resumen del grupo.
    Resultado esperado: la tarjeta de métricas muestra integrantes y cero gastos.
-16. Creá un gasto de $100 con 4 participantes y un solo pagador que ponga $100.
+17. Creá un gasto de $100 con 4 participantes y un solo pagador que ponga $100.
    Resultado esperado: el gasto se guarda y el pagador queda a favor por lo que adelantó menos su propio consumo.
-17. Antes de guardar un gasto, tocá `Calcular división`.
+18. Antes de guardar un gasto, tocá `Calcular división`.
    Resultado esperado: aparece una vista previa con pagos y consumo por integrante, sin guardar todavía el gasto.
-18. Editá uno de los gastos desde el resumen del grupo.
+19. Editá uno de los gastos desde el resumen del grupo.
    Resultado esperado: el formulario se precarga, permite guardar cambios y la liquidación se recalcula.
-19. Eliminá un gasto individual desde el resumen del grupo.
+20. Eliminá un gasto individual desde el resumen del grupo.
    Resultado esperado: la app confirma, elimina el gasto y actualiza saldos y transferencias.
-20. Usá `Limpiar gastos` al final del resumen del grupo.
+21. Usá `Limpiar gastos` al final del resumen del grupo.
    Resultado esperado: la app confirma, borra todos los gastos del grupo y conserva integrantes y grupo.
-21. Creá otro gasto de $100 con dos pagadores: uno pone $80 y otro $20.
+22. Creá otro gasto de $100 con dos pagadores: uno pone $80 y otro $20.
    Resultado esperado: la app sólo deja guardar si la suma de pagos da exactamente $100.
-22. Usá división igualitaria en ese segundo gasto.
+23. Usá división igualitaria en ese segundo gasto.
    Resultado esperado: el consumo se reparte entre todos los participantes, incluyendo a quienes pagaron.
-23. Creá un tercer gasto con división personalizada.
+24. Creá un tercer gasto con división personalizada.
    Resultado esperado: la app sólo deja guardar si la suma del consumo personalizado coincide con el total.
-24. Revisá el bloque de saldos.
+25. Revisá el bloque de saldos.
    Resultado esperado: cada integrante muestra su saldo neto dentro del grupo según pagos menos consumo.
-25. Revisá la liquidación sugerida.
+26. Revisá la liquidación sugerida.
     Resultado esperado: aparecen transferencias entre deudores y acreedores del grupo.
-26. Tocá las acciones de compartir y probá al menos `Compartir resumen completo` y `Compartir sólo transferencias` con link de grupo configurado.
+27. Tocá las acciones de compartir y probá al menos `Compartir resumen completo` y `Compartir sólo transferencias` con link de grupo configurado.
    Resultado esperado: la app copia el mensaje y abre el grupo de WhatsApp para pegarlo ahí.
-27. Probá `Compartir mensaje corto` sin link de grupo configurado.
+28. Probá `Compartir mensaje corto` sin link de grupo configurado.
    Resultado esperado: se comparte una versión breve de la liquidación, pensada para copiar o reenviar rápido.
-28. Tocá el botón `WhatsApp` en una transferencia individual.
+29. Tocá el botón `WhatsApp` en una transferencia individual.
    Resultado esperado: abre el chat del deudor correcto con un mensaje precargado indicando cuánto, a quién pagar y el alias/link de cobro si está cargado.
 
 ## Casos de borde
@@ -86,16 +88,16 @@
    Resultado esperado: aparece un alert de validación.
 6. Intentá abrir un grupo sin integrantes y crear un gasto.
    Resultado esperado: la app invita a ir a la pantalla de integrantes.
-7. Intentá importar contactos desde web.
-   Resultado esperado: la app muestra que esa función está disponible sólo en móvil.
+7. Intentá importar contactos desde web en un navegador sin soporte.
+   Resultado esperado: la app explica que ese navegador no permite elegir contactos y ofrece seguir manualmente.
 8. Intentá eliminar un integrante ya usado en gastos.
    Resultado esperado: la app bloquea la acción para no romper la liquidación.
 9. Cambiá de tema varias veces mientras navegás pantallas.
    Resultado esperado: no hay fondos o textos ilegibles al alternar claro, oscuro y automático.
 10. Reiniciá la app después de elegir claro u oscuro.
    Resultado esperado: el modo elegido se mantiene al volver a abrir.
-11. Abrí la versión web publicada desde el navegador del celular y usá `Agregar a pantalla de inicio`.
-   Resultado esperado: la app queda instalable y se abre en modo standalone desde el acceso directo.
+11. Abrí la versión web publicada desde el navegador del celular y revisá la tarjeta `Instalar app`.
+   Resultado esperado: si Chrome dispara el prompt, aparece el botón para instalar; si no, se muestran instrucciones manuales.
 12. Verificá el acceso directo instalado en la pantalla de inicio del celular.
    Resultado esperado: el icono usa la identidad visual de Dividamos CTA y no un favicon genérico del navegador.
 13. Abrí la app instalada y volvé a cerrarla desde multitarea.

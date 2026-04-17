@@ -49,7 +49,8 @@ La app activa del proyecto vive en esta raíz y arranca desde App.tsx.
 ## Contactos del teléfono
 
 - La importación básica de un contacto ya está integrada para Android/iPhone.
-- En web se muestra fallback y no intenta acceder a contactos.
+- En Chrome para Android, la versión web ahora intenta abrir el selector de contactos del navegador si está disponible.
+- En navegadores sin esa API, la app mantiene el alta manual como fallback.
 - El contacto importado precarga nombre, teléfono y alias sugerido antes de guardar.
 - Si el teléfono ya existe dentro del grupo, la app bloquea el duplicado.
 
@@ -101,6 +102,10 @@ Al instalarla, la app se abre en modo standalone, usa icono propio y queda acces
 - Manifest PWA enlazada desde `public/index.html`.
 - Iconos dedicados para Android/Chrome (`192x192`, `512x512`) y acceso directo de iPhone (`apple-touch-icon`).
 - Meta tags para mejorar apertura standalone en navegadores móviles.
+- Service worker registrado desde la app web para que Chrome la trate como PWA instalable.
+- Botón visible dentro de la pantalla principal para instalar la app cuando el navegador expone el prompt.
+
+Nota: Chrome no siempre muestra el prompt de instalación apenas abrís la URL. A veces exige una visita real al sitio; por eso la app también muestra instrucciones manuales cuando no puede disparar el prompt automáticamente.
 
 Nota: esta app sigue siendo un proyecto Expo móvil primero. Vercel sirve para publicar la variante web, no la app nativa Android/iOS.
 
