@@ -12,15 +12,96 @@ type BeforeInstallPromptEvent = Event & {
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let isBootstrapped = false;
+let activeRegistration: ServiceWorkerRegistration | null = null;
+
+const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 
 const listeners = new Set<(state: PwaInstallState) => void>();
+
+async function triggerServiceWorkerUpdateCheck() {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  const registration = activeRegistration ?? await navigator.serviceWorker.getRegistration();
+
+  if (!registration) {
+    return;
+  }
+
+  activeRegistration = registration;
+
+  try {
+    await registration.update();
+
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+  } catch {
+    return;
+  }
+}
+
+function bindServiceWorkerRefreshTriggers() {
+  if (window.__dividamosUpdateTriggersBound) {
+    return;
+  }
+
+  window.__dividamosUpdateTriggersBound = true;
+
+  const checkForUpdates = () => {
+    void triggerServiceWorkerUpdateCheck();
+  };
+
+  window.addEventListener('focus', checkForUpdates);
+  window.addEventListener('online', checkForUpdates);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      checkForUpdates();
+    }
+  });
+
+  window.setInterval(checkForUpdates, UPDATE_CHECK_INTERVAL_MS);
+}
 
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) {
     return;
   }
 
-  navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+  navigator.serviceWorker.register('/sw.js').then(registration => {
+    activeRegistration = registration;
+    bindServiceWorkerRefreshTriggers();
+    void triggerServiceWorkerUpdateCheck();
+
+    registration.addEventListener('updatefound', () => {
+      const installingWorker = registration.installing;
+
+      if (!installingWorker) {
+        return;
+      }
+
+      installingWorker.addEventListener('statechange', () => {
+        if (installingWorker.state === 'installed' && registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+
+    if (!window.__dividamosControllerReloadBound) {
+      window.__dividamosControllerReloadBound = true;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    }
+  }).catch(() => undefined);
+}
+
+declare global {
+  interface Window {
+    __dividamosControllerReloadBound?: boolean;
+    __dividamosUpdateTriggersBound?: boolean;
+  }
 }
 
 function isInstalled() {

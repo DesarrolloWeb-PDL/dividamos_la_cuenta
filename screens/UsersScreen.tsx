@@ -1,6 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, Pressable } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert, Pressable, TextInput } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { importSingleContactDraft } from '../services/contactImportService';
 import { confirmAction } from '../services/dialogService';
 import { isUserLinkedToGroupExpenses } from '../services/expenseService';
@@ -14,6 +15,7 @@ export default function UsersScreen({ navigation, route }: any) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [users, setUsers] = useState<any[]>([]);
+  const [inviteCount, setInviteCount] = useState('');
   const groupId = route?.params?.groupId;
   const groupName = route?.params?.groupName ?? 'Grupo';
 
@@ -98,6 +100,34 @@ export default function UsersScreen({ navigation, route }: any) {
     Alert.alert('Error', result.message);
   };
 
+  const handleGenerateInviteMessage = async () => {
+    const parsedCount = Number(inviteCount.trim());
+
+    if (!inviteCount.trim() || Number.isNaN(parsedCount) || parsedCount <= 0) {
+      Alert.alert('Cantidad inválida', 'Ingresá una cantidad válida de integrantes.');
+      return;
+    }
+
+    const message = [
+      `Hola gente de ${groupName}.`,
+      '',
+      `Para organizar este grupo voy a cargar ${parsedCount} integrantes en Dividamos CTA.`,
+      'Respóndanme por este grupo con estos datos:',
+      '1. Nombre o apodo',
+      '2. Teléfono',
+      '3. Alias, CVU o link de cobro (si tienen)',
+      '',
+      'Así los cargo más rápido y después liquidamos sin errores.',
+    ].join('\n');
+
+    try {
+      await Clipboard.setStringAsync(message);
+      Alert.alert('Mensaje copiado', 'Ya quedó copiado para pegarlo en el grupo de WhatsApp.');
+    } catch {
+      Alert.alert('Error', 'No se pudo copiar el mensaje.');
+    }
+  };
+
   useEffect(() => {
     loadUsers();
     const unsubscribe = navigation.addListener('focus', loadUsers);
@@ -106,16 +136,12 @@ export default function UsersScreen({ navigation, route }: any) {
   }, [groupId, navigation]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Integrantes</Text>
-      <Text style={styles.subtitle}>{groupName}</Text>
-      <CustomButton title="Agregar integrante" onPress={() => navigateToAddUser(null)} />
-      <CustomButton title="Importar desde contactos" onPress={handleImportContact} color="#198754" />
-      <Text style={styles.helperText}>En Android nativo funciona con la agenda del teléfono. En Chrome para Android, si el navegador lo soporta, también podés elegir un contacto.</Text>
-      <FlatList
-        data={users}
-        keyExtractor={item => item._id.toString()}
-        renderItem={({ item }) => {
+    <FlatList
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      data={users}
+      keyExtractor={item => item._id.toString()}
+      renderItem={({ item }) => {
           const paymentHandleKind = detectPaymentHandleKind(item.paymentHandle);
           const paymentBadgeStyle = paymentHandleKind === 'link'
             ? styles.paymentBadgelink
@@ -157,17 +183,61 @@ export default function UsersScreen({ navigation, route }: any) {
             </View>
           );
         }}
-        ListEmptyComponent={<Text>No hay integrantes en este grupo todavía.</Text>}
-      />
-    </View>
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
+      ListHeaderComponent={(
+        <View style={styles.headerStack}>
+          <Text style={styles.title}>Integrantes</Text>
+          <Text style={styles.subtitle}>{groupName}</Text>
+          <CustomButton title="Agregar integrante" onPress={() => navigateToAddUser(null)} />
+          <CustomButton title="Importar desde contactos" onPress={handleImportContact} color="#198754" />
+          <View style={styles.inviteCard}>
+            <Text style={styles.inviteTitle}>Pedir datos por WhatsApp</Text>
+            <Text style={styles.inviteText}>Si todavía no querés cargar integrantes uno por uno, indicá cuántos son y copiá un mensaje listo para pegar en el grupo.</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Cantidad de integrantes"
+              placeholderTextColor={colors.textMuted}
+              value={inviteCount}
+              onChangeText={setInviteCount}
+              keyboardType="numeric"
+            />
+            <CustomButton title="Copiar mensaje para WhatsApp" onPress={handleGenerateInviteMessage} color={colors.primary} />
+          </View>
+          <Text style={styles.helperText}>En Android nativo funciona con la agenda del teléfono. En Chrome para Android, si el navegador lo soporta, también podés elegir un contacto.</Text>
+        </View>
+      )}
+      ListEmptyComponent={<Text style={styles.emptyText}>No hay integrantes en este grupo todavía.</Text>}
+    />
   );
 }
 
 const createStyles = (colors: AppPalette) => StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: colors.background },
+  screen: { flex: 1, backgroundColor: colors.background },
+  content: { padding: 16, paddingBottom: 32 },
+  headerStack: { marginBottom: 12 },
+  separator: { height: 8 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: colors.text },
   subtitle: { color: colors.textMuted, marginBottom: 16 },
+  inviteCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  inviteTitle: { color: colors.text, fontWeight: '700', marginBottom: 4 },
+  inviteText: { color: colors.textMuted, lineHeight: 20, marginBottom: 10 },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 4,
+    color: colors.text,
+    backgroundColor: colors.background,
+  },
   helperText: { color: colors.textMuted, lineHeight: 20, marginBottom: 12 },
+  emptyText: { color: colors.textMuted },
   item: { padding: 12, borderBottomWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 12, marginBottom: 8 },
   itemName: { fontSize: 16, fontWeight: '600', color: colors.text },
   itemMeta: { color: colors.textMuted, marginTop: 2 },

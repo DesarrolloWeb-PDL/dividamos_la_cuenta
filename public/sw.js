@@ -1,5 +1,9 @@
-const CACHE_NAME = 'dividamos-cta-v1';
+const CACHE_NAME = 'dividamos-cta-v2';
 const APP_SHELL = ['/', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
+
+function isStaticAsset(requestUrl) {
+  return /\.(?:png|jpg|jpeg|webp|gif|svg|ico|json|txt|woff2?)$/i.test(requestUrl.pathname);
+}
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -19,6 +23,12 @@ self.addEventListener('activate', event => {
   );
 
   self.clients.claim();
+});
+
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', event => {
@@ -45,6 +55,16 @@ self.addEventListener('fetch', event => {
   }
 
   if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
+  if (!isStaticAsset(requestUrl)) {
+    event.respondWith(
+      fetch(event.request).catch(async () => {
+        const cache = await caches.open(CACHE_NAME);
+        return cache.match(event.request) || cache.match('/') || Response.error();
+      }),
+    );
     return;
   }
 
