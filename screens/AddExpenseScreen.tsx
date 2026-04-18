@@ -371,7 +371,7 @@ export default function AddExpenseScreen({ navigation, route }: any) {
             <View key={user.id} style={styles.userCard}>
               <View style={styles.userInfo}>
                 <Text style={styles.userName}>{displayName}</Text>
-                <Text style={styles.userPhone}>{user.name} · {user.phone}</Text>
+                <Text style={styles.userPhone}>{user.phone?.trim() ? `${user.name} · ${user.phone}` : 'Integrante rápido sin teléfono'}</Text>
               </View>
               <View style={styles.actionsRow}>
                 <Pressable

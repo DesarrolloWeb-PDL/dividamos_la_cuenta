@@ -54,42 +54,37 @@ function formatTransferTarget(user?: UserView) {
   return displayName;
 }
 
-function buildDetailedGroupMessage(groupName: string, expenses: ExpenseView[], users: UserView[], transfers: SettlementTransfer[], balances: UserBalance[]) {
-  const expenseBlocks = expenses.length === 0
-    ? ['- No hay gastos cargados.']
-    : expenses.map(expense => {
-      const breakdown = calculateExpenseBreakdown(expense, users);
-      const paidByLines = breakdown.paymentSummary.length === 0
-        ? ['- Sin pagos cargados']
-        : breakdown.paymentSummary.map(payment => `- ${payment.userName} $${payment.amount.toFixed(2)}`);
-      const consumedByLines = breakdown.shares.length === 0
-        ? ['- Sin participantes']
-        : breakdown.shares.map(share => `- ${share.userName} $${share.share.toFixed(2)}`);
+const APP_SHARE_LINK = 'https://dividamos-la-cuenta.vercel.app/';
 
-      return [
-        `${expense.description} $${expense.amount.toFixed(2)}`,
-        'Pagaron:',
-        ...paidByLines,
-        'Consumo:',
-        ...consumedByLines,
-      ].join('\n');
-    });
+function buildGroupAmountsMessage(groupName: string, expenses: ExpenseView[], users: UserView[]) {
+  const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const participantCount = users.length;
+  const footerLines = [
+    '****',
+    'Este mensaje fue creado por la aplicación Cuentas Claras.',
+    APP_SHARE_LINK,
+    'Muchas gracias por usar la aplicación.',
+  ];
 
-  const transferLines = transfers.length === 0
-    ? ['- No hace falta transferir nada.']
-    : transfers.map(transfer => {
-      const creditor = users.find(user => user._id.toString() === transfer.toUserId);
-      return `- ${transfer.fromUserName} enviar $${transfer.amount.toFixed(2)} a ${formatTransferTarget(creditor)}`;
-    });
+  if (participantCount === 0) {
+    return [
+      groupName,
+      '',
+      'No hay integrantes cargados.',
+      '',
+      ...footerLines,
+    ].join('\n');
+  }
+
+  const amountPerUser = totalAmount / participantCount;
 
   return [
     groupName,
     '',
-    'Detalle de gastos:',
-    ...expenseBlocks,
+    `Total gastado: $${totalAmount.toFixed(2)}.`,
+    `Cada integrante tiene que pagar $${amountPerUser.toFixed(2)}.`,
     '',
-    'Enviar saldo deudor:',
-    ...transferLines,
+    ...footerLines,
   ].join('\n');
 }
 
@@ -147,12 +142,12 @@ export default function HomeScreen({ navigation, route }: any) {
     }
 
     const messageTitleByVariant: Record<SettlementMessageVariant, string> = {
-      full: 'Resumen completo',
+      full: 'Monto por integrante',
       'transfers-only': 'Liquidación sugerida',
       short: 'Mensaje corto',
     };
     const message = variant === 'full'
-      ? buildDetailedGroupMessage(groupName, expenses, users, transfers, balances)
+      ? buildGroupAmountsMessage(groupName, expenses, users)
       : `${groupName}\n\n${formatSettlementMessage({ balances, transfers }, variant)}`;
     const groupWhatsappLink = groupDetails?.whatsappGroupLink?.trim();
 
@@ -373,7 +368,7 @@ export default function HomeScreen({ navigation, route }: any) {
           <View style={styles.actionsCard}>
             <Text style={styles.sectionHeading}>Compartir</Text>
             <Text style={styles.shareHint}>Elegí el formato que querés mandar por WhatsApp o por el share del sistema.</Text>
-            <CustomButton title="Compartir resumen completo" onPress={() => handleShareSettlement('full')} color="#198754" />
+            <CustomButton title="Compartir monto por integrante" onPress={() => handleShareSettlement('full')} color="#198754" />
             <CustomButton title="Compartir sólo transferencias" onPress={() => handleShareSettlement('transfers-only')} color="#0f766e" />
             <CustomButton title="Compartir mensaje corto" onPress={() => handleShareSettlement('short')} color="#2563eb" />
           </View>

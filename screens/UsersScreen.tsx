@@ -1,12 +1,11 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Alert, Pressable, TextInput } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
 import { importSingleContactDraft } from '../services/contactImportService';
 import { confirmAction } from '../services/dialogService';
 import { isUserLinkedToGroupExpenses } from '../services/expenseService';
 import { detectPaymentHandleKind, getPaymentHandleLabel } from '../services/paymentHandle';
-import { deleteUser, getUsersByGroup } from '../services/userService';
+import { addUser, deleteUser, getUsersByGroup } from '../services/userService';
 import CustomButton from '../components/CustomButton';
 import { AppPalette, useAppTheme } from '../theme/appTheme';
 
@@ -100,31 +99,61 @@ export default function UsersScreen({ navigation, route }: any) {
     Alert.alert('Error', result.message);
   };
 
-  const handleGenerateInviteMessage = async () => {
-    const parsedCount = Number(inviteCount.trim());
+  const handleGenerateQuickUsers = async () => {
+    const targetCount = Number(inviteCount.trim());
 
-    if (!inviteCount.trim() || Number.isNaN(parsedCount) || parsedCount <= 0) {
+    if (!inviteCount.trim() || Number.isNaN(targetCount) || targetCount <= 0) {
       Alert.alert('Cantidad inválida', 'Ingresá una cantidad válida de integrantes.');
       return;
     }
 
-    const message = [
-      `Hola gente de ${groupName}.`,
-      '',
-      `Para organizar este grupo voy a cargar ${parsedCount} integrantes en Dividamos CTA.`,
-      'Respóndanme por este grupo con estos datos:',
-      '1. Nombre o apodo',
-      '2. Teléfono',
-      '3. Alias, CVU o link de cobro (si tienen)',
-      '',
-      'Así los cargo más rápido y después liquidamos sin errores.',
-    ].join('\n');
+    if (!groupId) {
+      Alert.alert('Error', 'No se encontró el grupo para generar integrantes.');
+      return;
+    }
+
+    if (users.length >= targetCount) {
+      Alert.alert(
+        'Sin cambios',
+        `Este grupo ya tiene ${users.length} integrante${users.length === 1 ? '' : 's'}. No hace falta generar más para llegar a ${targetCount}.`,
+      );
+      return;
+    }
+
+    const generatedIndexes = users.reduce<number[]>((accumulator, user) => {
+      const label = user.alias?.trim() || user.name;
+      const match = label.match(/^Integrante (\d+)$/i);
+
+      if (match) {
+        accumulator.push(Number(match[1]));
+      }
+
+      return accumulator;
+    }, []);
+
+    const nextIndexBase = generatedIndexes.length > 0 ? Math.max(...generatedIndexes) : 0;
+    const missingCount = targetCount - users.length;
 
     try {
-      await Clipboard.setStringAsync(message);
-      Alert.alert('Mensaje copiado', 'Ya quedó copiado para pegarlo en el grupo de WhatsApp.');
+      for (let index = 0; index < missingCount; index += 1) {
+        const userNumber = nextIndexBase + index + 1;
+
+        await addUser({
+          groupId,
+          name: `Integrante ${userNumber}`,
+          alias: `Integrante ${userNumber}`,
+          phone: '',
+          paymentHandle: '',
+        });
+      }
+
+      await loadUsers();
+      Alert.alert(
+        'Integrantes generados',
+        `Se agregaron ${missingCount} integrante${missingCount === 1 ? '' : 's'} automáticos para llegar a ${targetCount}.`,
+      );
     } catch {
-      Alert.alert('Error', 'No se pudo copiar el mensaje.');
+      Alert.alert('Error', 'No se pudieron generar los integrantes automáticos.');
     }
   };
 
@@ -157,7 +186,7 @@ export default function UsersScreen({ navigation, route }: any) {
           return (
             <View style={styles.item}>
               <Text style={styles.itemName}>{item.alias?.trim() || item.name}</Text>
-              <Text style={styles.itemMeta}>{item.name} · {item.phone}</Text>
+              <Text style={styles.itemMeta}>{item.phone?.trim() ? `${item.name} · ${item.phone}` : 'Integrante rápido sin teléfono'}</Text>
               {item.paymentHandle?.trim() ? (
                 <View style={[styles.paymentBadge, paymentBadgeStyle]}>
                   <Text style={[styles.paymentBadgeText, paymentBadgeTextStyle]}>
@@ -191,8 +220,8 @@ export default function UsersScreen({ navigation, route }: any) {
           <CustomButton title="Agregar integrante" onPress={() => navigateToAddUser(null)} />
           <CustomButton title="Importar desde contactos" onPress={handleImportContact} color="#198754" />
           <View style={styles.inviteCard}>
-            <Text style={styles.inviteTitle}>Pedir datos por WhatsApp</Text>
-            <Text style={styles.inviteText}>Si todavía no querés cargar integrantes uno por uno, indicá cuántos son y copiá un mensaje listo para pegar en el grupo.</Text>
+            <Text style={styles.inviteTitle}>Generar integrantes rápidos</Text>
+            <Text style={styles.inviteText}>Si no querés cargar integrantes uno por uno, indicá cuántos son y la app va a crear integrantes automáticos para dividir los gastos por esa cantidad.</Text>
             <TextInput
               style={styles.input}
               placeholder="Cantidad de integrantes"
@@ -201,7 +230,7 @@ export default function UsersScreen({ navigation, route }: any) {
               onChangeText={setInviteCount}
               keyboardType="numeric"
             />
-            <CustomButton title="Copiar mensaje para WhatsApp" onPress={handleGenerateInviteMessage} color={colors.primary} />
+            <CustomButton title="Generar integrantes automáticos" onPress={handleGenerateQuickUsers} color={colors.primary} />
           </View>
           <Text style={styles.helperText}>En Android nativo funciona con la agenda del teléfono. En Chrome para Android, si el navegador lo soporta, también podés elegir un contacto.</Text>
         </View>
