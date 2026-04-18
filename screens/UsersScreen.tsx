@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Alert, Pressable } from 'react-native';
 import { importSingleContactDraft } from '../services/contactImportService';
+import { confirmAction } from '../services/dialogService';
 import { isUserLinkedToGroupExpenses } from '../services/expenseService';
 import { detectPaymentHandleKind, getPaymentHandleLabel } from '../services/paymentHandle';
 import { deleteUser, getUsersByGroup } from '../services/userService';
@@ -35,37 +36,36 @@ export default function UsersScreen({ navigation, route }: any) {
     });
   };
 
-  const handleDeleteUser = (user: any) => {
-    Alert.alert(
-      'Eliminar integrante',
-      `Se va a borrar ${user.alias?.trim() || user.name}.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            if (!groupId) {
-              return;
-            }
+  const handleDeleteUser = async (user: any) => {
+    const shouldDelete = await confirmAction({
+      title: 'Eliminar integrante',
+      message: `Se va a borrar ${user.alias?.trim() || user.name}.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      destructive: true,
+    });
 
-            const isLinked = await isUserLinkedToGroupExpenses(groupId, user._id.toString());
+    if (!shouldDelete || !groupId) {
+      return;
+    }
 
-            if (isLinked) {
-              Alert.alert(
-                'No se puede eliminar',
-                'Este integrante ya participa en gastos del grupo. Primero tendrías que borrar esos gastos para no romper la liquidación.',
-              );
-              return;
-            }
+    try {
+      const isLinked = await isUserLinkedToGroupExpenses(groupId, user._id.toString());
 
-            await deleteUser(user._id.toString());
-            await loadUsers();
-            Alert.alert('Integrante eliminado', 'El integrante se borró del grupo.');
-          },
-        },
-      ],
-    );
+      if (isLinked) {
+        Alert.alert(
+          'No se puede eliminar',
+          'Este integrante ya participa en gastos del grupo. Primero tendrías que borrar esos gastos para no romper la liquidación.',
+        );
+        return;
+      }
+
+      await deleteUser(user._id.toString());
+      await loadUsers();
+      Alert.alert('Integrante eliminado', 'El integrante se borró del grupo.');
+    } catch {
+      Alert.alert('Error', 'No se pudo eliminar el integrante.');
+    }
   };
 
   const handleImportContact = async () => {

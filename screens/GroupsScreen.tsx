@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import CustomButton from '../components/CustomButton';
+import { confirmAction } from '../services/dialogService';
 import { deleteExpensesByGroup, getAllExpenses } from '../services/expenseService';
 import { deleteGroup, getAllGroups } from '../services/groupService';
 import { promptPwaInstall, subscribeToPwaInstallState, type PwaInstallState } from '../services/pwaInstallService';
@@ -56,28 +57,31 @@ export default function GroupsScreen({ navigation }: any) {
     setExpenseCountByGroup(nextExpenseCountByGroup);
   };
 
-  const handleDeleteGroup = (group: GroupView) => {
-    Alert.alert(
-      'Eliminar grupo',
-      `Se va a borrar ${group.name} con sus integrantes y gastos. Esta acción no se puede deshacer.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            const groupId = group._id.toString();
-            await Promise.all([
-              deleteGroup(groupId),
-              deleteUsersByGroup(groupId),
-              deleteExpensesByGroup(groupId),
-            ]);
-            await loadGroups();
-            Alert.alert('Grupo eliminado', 'También se borraron sus integrantes y gastos.');
-          },
-        },
-      ],
-    );
+  const handleDeleteGroup = async (group: GroupView) => {
+    const shouldDelete = await confirmAction({
+      title: 'Eliminar grupo',
+      message: `Se va a borrar ${group.name} con sus integrantes y gastos. Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      destructive: true,
+    });
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      const groupId = group._id.toString();
+      await Promise.all([
+        deleteGroup(groupId),
+        deleteUsersByGroup(groupId),
+        deleteExpensesByGroup(groupId),
+      ]);
+      await loadGroups();
+      Alert.alert('Grupo eliminado', 'También se borraron sus integrantes y gastos.');
+    } catch {
+      Alert.alert('Error', 'No se pudo eliminar el grupo.');
+    }
   };
 
   const handleInstallApp = async () => {

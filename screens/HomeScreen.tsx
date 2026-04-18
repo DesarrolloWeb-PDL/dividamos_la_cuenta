@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Alert, Linking, Pressable, Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { confirmAction } from '../services/dialogService';
 import { deleteExpense, deleteExpensesByGroup, getExpensesByGroup } from '../services/expenseService';
 import { getUsersByGroup } from '../services/userService';
 import { getGroupById } from '../services/groupService';
@@ -226,46 +227,52 @@ export default function HomeScreen({ navigation, route }: any) {
     }
   };
 
-  const handleDeleteExpense = (expense: ExpenseView) => {
-    Alert.alert(
-      'Eliminar gasto',
-      `Se va a borrar ${expense.description} por $${expense.amount.toFixed(2)}.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteExpense(expense._id.toString());
-            await loadExpenses();
-            Alert.alert('Gasto eliminado', 'La liquidación del grupo se recalculó automáticamente.');
-          },
-        },
-      ],
-    );
+  const handleDeleteExpense = async (expense: ExpenseView) => {
+    const shouldDelete = await confirmAction({
+      title: 'Eliminar gasto',
+      message: `Se va a borrar ${expense.description} por $${expense.amount.toFixed(2)}.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      destructive: true,
+    });
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      await deleteExpense(expense._id.toString());
+      await loadExpenses();
+      Alert.alert('Gasto eliminado', 'La liquidación del grupo se recalculó automáticamente.');
+    } catch {
+      Alert.alert('Error', 'No se pudo eliminar el gasto.');
+    }
   };
 
-  const handleClearExpenses = () => {
+  const handleClearExpenses = async () => {
     if (!groupId) {
       return;
     }
 
-    Alert.alert(
-      'Limpiar gastos',
-      'Se van a borrar todos los gastos de este grupo. Los integrantes se conservan, pero la liquidación vuelve a cero.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Limpiar',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteExpensesByGroup(groupId);
-            await loadExpenses();
-            Alert.alert('Gastos limpiados', 'El grupo quedó listo para empezar una nueva ronda de gastos.');
-          },
-        },
-      ],
-    );
+    const shouldClear = await confirmAction({
+      title: 'Limpiar gastos',
+      message: 'Se van a borrar todos los gastos de este grupo. Los integrantes se conservan, pero la liquidación vuelve a cero.',
+      confirmText: 'Limpiar',
+      cancelText: 'Cancelar',
+      destructive: true,
+    });
+
+    if (!shouldClear) {
+      return;
+    }
+
+    try {
+      await deleteExpensesByGroup(groupId);
+      await loadExpenses();
+      Alert.alert('Gastos limpiados', 'El grupo quedó listo para empezar una nueva ronda de gastos.');
+    } catch {
+      Alert.alert('Error', 'No se pudieron limpiar los gastos del grupo.');
+    }
   };
 
   useEffect(() => {
