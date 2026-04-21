@@ -5,8 +5,7 @@ import { confirmAction } from '../services/dialogService';
 import { deleteExpense, deleteExpensesByGroup, getExpensesByGroup } from '../services/expenseService';
 import { getUsersByGroup } from '../services/userService';
 import { getGroupById } from '../services/groupService';
-import { formatPaymentHandleForMessage } from '../services/paymentHandle';
-import { calculateDetailedSettlement, calculateExpenseBreakdown, calculateSettlement, formatDirectTransferMessage, formatSettlementMessage, SettlementMessageVariant, SettlementTransfer, UserBalance } from '../services/settlementService';
+import { calculateDetailedSettlement, calculateExpenseBreakdown, calculateSettlement, formatSettlementMessage, SettlementMessageVariant, SettlementTransfer, UserBalance } from '../services/settlementService';
 import CustomButton from '../components/CustomButton';
 import { AppPalette, useAppTheme } from '../theme/appTheme';
 
@@ -43,73 +42,158 @@ function normalizeWhatsappPhone(phone?: string) {
   return phone.replace(/\D/g, '');
 }
 
-function formatTransferTarget(user?: UserView) {
-  const displayName = user?.alias?.trim() || user?.name || 'destinatario';
-  const paymentHandleLine = formatPaymentHandleForMessage(user?.paymentHandle?.trim());
+function formatTotalAmount(amount: number) {
+  return amount.toFixed(2);
+}
 
-  if (paymentHandleLine) {
-    return `${displayName} · ${paymentHandleLine}`;
+function formatPerParticipantAmount(amount: number) {
+  return amount.toLocaleString('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function buildPayerTarget(user: UserView) {
+  const displayName = user.alias?.trim() || user.name;
+  const paymentHandle = user.paymentHandle?.trim();
+
+  if (!paymentHandle) {
+    return displayName;
   }
 
-  return displayName;
+  return `${displayName}: ${paymentHandle}`;
+}
+
+function buildPayerTargetByValues(name: string, paymentHandle?: string) {
+  if (!paymentHandle) {
+    return name;
+  }
+
+  return `${name}: ${paymentHandle}`;
 }
 
 const APP_SHARE_LINK = 'https://dividamos-la-cuenta.vercel.app/';
 
-function buildGroupAmountsMessage(groupName: string, expenses: ExpenseView[], users: UserView[]) {
+function buildSettlementBaseLines(expenses: ExpenseView[], users: UserView[]) {
   const summary = calculateDetailedSettlement(expenses, users);
+
+  if (summary.members.length === 0) {
+    return [
+      'No hay movimientos cargados para este grupo.',
+    ];
+  }
+
+  const participants = summary.participants;
+  const participantCount = participants.length;
+  const divisionPerParticipant = participantCount > 0 ? summary.totalAmount / participantCount : 0;
+  const payerUsers = new Map(users.map(user => [user._id.toString(), user]));
+
+  const payerLines = summary.payers.length === 0
+    ? ['- No hubo pagadores cargados.']
+    : summary.payers.map(payer => `- ${payer.userName}: puso $${formatTotalAmount(payer.paid)} en total`);
+
+  const distributionLines = summary.payers.length === 0
+    ? ['- No hay pagos para repartir entre participantes.']
+    : summary.payers.map(payer => {
+      const payerUser = payerUsers.get(payer.userId);
+      const payerTarget = payerUser ? buildPayerTarget(payerUser) : payer.userName;
+      const amountPerParticipant = participantCount > 0 ? payer.paid / participantCount : 0;
+
+      return `Cada integrante tiene que pagar $${formatPerParticipantAmount(amountPerParticipant)} A ${payerTarget}`;
+    });
+
+  const participantLines = !summary.isUniformSplit
+    ? [
+      '',
+      'Detalle por participante:',
+      ...participants.map(participant => {
+        const obligationSummary = participant.obligations.length > 0
+          ? participant.obligations.map(obligation => {
+            const payerUser = payerUsers.get(obligation.payerUserId);
+            const payerTarget = buildPayerTargetByValues(
+              payerUser?.alias?.trim() || payerUser?.name || obligation.payerUserName,
+              payerUser?.paymentHandle?.trim(),
+            );
+
+            return `$${formatPerParticipantAmount(obligation.amount)} a ${payerTarget}`;
+          }).join(' | ')
+          : 'sin pagos pendientes';
+
+        return `- ${participant.userName}: consumió $${formatPerParticipantAmount(participant.consumed)} | ${obligationSummary}`;
+      }),
+    ]
+    : [];
+
+  return [
+    `Total gastado: $${formatTotalAmount(summary.totalAmount)}.`,
+    ...payerLines,
+    '',
+    `PARTICIPANTES: (${participantCount})`,
+    summary.isUniformSplit
+      ? `División total c/u: $${formatPerParticipantAmount(divisionPerParticipant)}`
+      : 'División variable según los gastos en los que participó cada integrante.',
+    ...(summary.isUniformSplit ? distributionLines : []),
+    ...participantLines,
+  ];
+}
+
+function buildGroupAmountsMessage(groupName: string, expenses: ExpenseView[], users: UserView[]) {
   const footerLines = [
     '****',
     'Este mensaje fue creado por la aplicación Cuentas Claras.',
     APP_SHARE_LINK,
     'Muchas gracias por usar la aplicación.',
   ];
-
-  if (summary.members.length === 0) {
-    return [
-      groupName,
-      '',
-      'No hay movimientos cargados para este grupo.',
-      '',
-      ...footerLines,
-    ].join('\n');
-  }
-
-  const memberLines = summary.members.map(member => {
-    const balanceLabel = member.balance > 0
-      ? `le tienen que pasar $${member.balance.toFixed(2)}`
-      : member.balance < 0
-        ? `tiene que pasar $${Math.abs(member.balance).toFixed(2)}`
-        : 'queda saldado';
-
-    return `- ${member.userName}: consumió $${member.consumed.toFixed(2)} | pagó $${member.paid.toFixed(2)} | ${balanceLabel}`;
-  });
-
-  const payerLines = summary.payers.length === 0
-    ? ['- No hubo pagadores cargados.']
-    : summary.payers.map(payer => (
-      `- ${payer.userName}: puso $${payer.paid.toFixed(2)} en total y le tienen que pasar $${payer.amountToReceive.toFixed(2)}`
-    ));
-
-  const transferLines = summary.transfers.length === 0
-    ? ['- No hace falta transferir nada.']
-    : summary.transfers.map(transfer => (
-      `- ${transfer.fromUserName} le paga a ${transfer.toUserName} $${transfer.amount.toFixed(2)}`
-    ));
+  const baseLines = buildSettlementBaseLines(expenses, users);
 
   return [
     groupName,
     '',
-    `Total gastado: $${summary.totalAmount.toFixed(2)}.`,
+    ...baseLines,
     '',
-    'Resumen por integrante:',
-    ...memberLines,
+    ...footerLines,
+  ].join('\n');
+}
+
+function buildIndividualSettlementMessage(recipient: UserView | undefined, transfer: SettlementTransfer, expenses: ExpenseView[], users: UserView[]) {
+  const summary = calculateDetailedSettlement(expenses, users);
+  const participant = recipient
+    ? summary.participants.find(entry => entry.userId === recipient._id.toString())
+    : summary.participants.find(entry => entry.userId === transfer.fromUserId);
+  const footerLines = [
+    '**',
+    'Este mensaje fue creado por la aplicación Cuentas Claras.',
+    APP_SHARE_LINK,
+    'Muchas gracias por usar la aplicación.',
+  ];
+
+  const payerUsers = new Map(users.map(user => [user._id.toString(), user]));
+  const personalizedLines = participant
+    ? [
+      '',
+      `Tu parte total en este grupo es: $${formatPerParticipantAmount(participant.consumed)}`,
+      ...(participant.obligations.length > 0
+        ? participant.obligations.map(obligation => {
+          const payerUser = payerUsers.get(obligation.payerUserId);
+          const payerTarget = buildPayerTargetByValues(
+            payerUser?.alias?.trim() || payerUser?.name || obligation.payerUserName,
+            payerUser?.paymentHandle?.trim(),
+          );
+
+          return `Te toca pagar $${formatPerParticipantAmount(obligation.amount)} A ${payerTarget}`;
+        })
+        : ['No tenés pagos pendientes en este grupo.']),
+    ]
+    : [
+      '',
+      'No encontramos un desglose individual para este integrante.',
+    ];
+
+  return [
+    `Hola ${recipient?.name?.trim() || transfer.fromUserName},`,
     '',
-    'Pagadores:',
-    ...payerLines,
-    '',
-    'Transferencias sugeridas:',
-    ...transferLines,
+    ...buildSettlementBaseLines(expenses, users),
+    ...personalizedLines,
     '',
     ...footerLines,
   ].join('\n');
@@ -223,7 +307,6 @@ export default function HomeScreen({ navigation, route }: any) {
 
   const handleNotifyTransferByWhatsapp = async (transfer: SettlementTransfer) => {
     const debtor = users.find(user => user._id.toString() === transfer.fromUserId);
-    const creditor = users.find(user => user._id.toString() === transfer.toUserId);
     const normalizedPhone = normalizeWhatsappPhone(debtor?.phone);
 
     if (!normalizedPhone) {
@@ -231,7 +314,7 @@ export default function HomeScreen({ navigation, route }: any) {
       return;
     }
 
-    const message = formatDirectTransferMessage(transfer, groupName, creditor?.paymentHandle?.trim());
+    const message = buildIndividualSettlementMessage(debtor, transfer, expenses, users);
     const appUrl = `whatsapp://send?phone=${normalizedPhone}&text=${encodeURIComponent(message)}`;
     const webUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
 

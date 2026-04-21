@@ -52,10 +52,26 @@ export type SettlementPayerSummary = {
   amountToReceive: number;
 };
 
+export type MemberPayerObligation = {
+  payerUserId: string;
+  payerUserName: string;
+  amount: number;
+};
+
+export type SettlementParticipantSummary = {
+  userId: string;
+  userName: string;
+  consumed: number;
+  totalOwed: number;
+  obligations: MemberPayerObligation[];
+};
+
 export type DetailedSettlementSummary = SettlementSummary & {
   totalAmount: number;
   members: SettlementMemberSummary[];
   payers: SettlementPayerSummary[];
+  participants: SettlementParticipantSummary[];
+  isUniformSplit: boolean;
 };
 
 export type SettlementMessageVariant = 'full' | 'transfers-only' | 'short';
@@ -129,6 +145,7 @@ function calculateSettlementData(expenses: ExpenseLike[], users: UserLike[]) {
   const balancesInCents = new Map<string, number>();
   const paidInCents = new Map<string, number>();
   const consumedInCents = new Map<string, number>();
+  const participantObligationsInCents = new Map<string, Map<string, number>>();
   let totalAmountInCents = 0;
 
   users.forEach(user => {
@@ -146,8 +163,10 @@ function calculateSettlementData(expenses: ExpenseLike[], users: UserLike[]) {
     totalAmountInCents += toCents(expense.amount);
 
     const shares = splitExpenseInCents(expense.amount, expense.participants, expense.participantAmounts);
+    const validPayments = expense.payments.filter(payment => payment.amount > 0);
+    const totalPaidInExpense = validPayments.reduce((sum, payment) => sum + toCents(payment.amount), 0);
 
-    expense.payments.forEach(payment => {
+    validPayments.forEach(payment => {
       if (payment.amount <= 0) {
         return;
       }
@@ -173,6 +192,28 @@ function calculateSettlementData(expenses: ExpenseLike[], users: UserLike[]) {
         share.participantId,
         (consumedInCents.get(share.participantId) ?? 0) + share.shareInCents,
       );
+
+      if (totalPaidInExpense <= 0) {
+        return;
+      }
+
+      const currentParticipantObligations = participantObligationsInCents.get(share.participantId) ?? new Map<string, number>();
+      let assignedInCents = 0;
+
+      validPayments.forEach((payment, index) => {
+        const paymentInCents = toCents(payment.amount);
+        const obligationInCents = index === validPayments.length - 1
+          ? share.shareInCents - assignedInCents
+          : Math.round((share.shareInCents * paymentInCents) / totalPaidInExpense);
+
+        assignedInCents += obligationInCents;
+        currentParticipantObligations.set(
+          payment.userId,
+          (currentParticipantObligations.get(payment.userId) ?? 0) + obligationInCents,
+        );
+      });
+
+      participantObligationsInCents.set(share.participantId, currentParticipantObligations);
     });
   });
 
@@ -227,6 +268,7 @@ function calculateSettlementData(expenses: ExpenseLike[], users: UserLike[]) {
     transfers,
     paidInCents,
     consumedInCents,
+    participantObligationsInCents,
     totalAmountInCents,
   };
 }
@@ -250,6 +292,7 @@ export function calculateDetailedSettlement(expenses: ExpenseLike[], users: User
     transfers,
     paidInCents,
     consumedInCents,
+    participantObligationsInCents,
     totalAmountInCents,
     userDirectory,
   } = calculateSettlementData(expenses, users);
@@ -298,10 +341,37 @@ export function calculateDetailedSettlement(expenses: ExpenseLike[], users: User
       return right.paid - left.paid;
     });
 
+  const participants = Array.from(participantObligationsInCents.entries())
+    .map(([userId, obligationsMap]) => {
+      const obligations = Array.from(obligationsMap.entries())
+        .map(([payerUserId, amountInCents]) => ({
+          payerUserId,
+          payerUserName: userDirectory.get(payerUserId) ?? 'Usuario desconocido',
+          amount: fromCents(amountInCents),
+        }))
+        .filter(obligation => obligation.amount > 0)
+        .sort((left, right) => right.amount - left.amount);
+
+      return {
+        userId,
+        userName: userDirectory.get(userId) ?? 'Usuario desconocido',
+        consumed: fromCents(consumedInCents.get(userId) ?? 0),
+        totalOwed: obligations.reduce((sum, obligation) => sum + obligation.amount, 0),
+        obligations,
+      };
+    })
+    .filter(participant => participant.consumed > 0)
+    .sort((left, right) => right.consumed - left.consumed);
+
+  const participantConsumedReference = participants[0]?.consumed ?? 0;
+  const isUniformSplit = participants.every(participant => Math.abs(participant.consumed - participantConsumedReference) < 0.005);
+
   return {
     totalAmount: fromCents(totalAmountInCents),
     members,
     payers,
+    participants,
+    isUniformSplit,
     balances: balances.map(balance => ({
       userId: balance.userId,
       userName: balance.userName,
