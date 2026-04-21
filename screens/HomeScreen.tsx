@@ -155,11 +155,7 @@ function buildGroupAmountsMessage(groupName: string, expenses: ExpenseView[], us
   ].join('\n');
 }
 
-function buildIndividualSettlementMessage(recipient: UserView | undefined, transfer: SettlementTransfer, expenses: ExpenseView[], users: UserView[]) {
-  const summary = calculateDetailedSettlement(expenses, users);
-  const participant = recipient
-    ? summary.participants.find(entry => entry.userId === recipient._id.toString())
-    : summary.participants.find(entry => entry.userId === transfer.fromUserId);
+function buildIndividualSettlementMessage(recipientName: string, groupName: string, expenses: ExpenseView[], users: UserView[]) {
   const footerLines = [
     '**',
     'Este mensaje fue creado por la aplicación Cuentas Claras.',
@@ -167,33 +163,12 @@ function buildIndividualSettlementMessage(recipient: UserView | undefined, trans
     'Muchas gracias por usar la aplicación.',
   ];
 
-  const payerUsers = new Map(users.map(user => [user._id.toString(), user]));
-  const personalizedLines = participant
-    ? [
-      '',
-      `Tu parte total en este grupo es: $${formatPerParticipantAmount(participant.consumed)}`,
-      ...(participant.obligations.length > 0
-        ? participant.obligations.map(obligation => {
-          const payerUser = payerUsers.get(obligation.payerUserId);
-          const payerTarget = buildPayerTargetByValues(
-            payerUser?.alias?.trim() || payerUser?.name || obligation.payerUserName,
-            payerUser?.paymentHandle?.trim(),
-          );
-
-          return `Te toca pagar $${formatPerParticipantAmount(obligation.amount)} A ${payerTarget}`;
-        })
-        : ['No tenés pagos pendientes en este grupo.']),
-    ]
-    : [
-      '',
-      'No encontramos un desglose individual para este integrante.',
-    ];
-
   return [
-    `Hola ${recipient?.name?.trim() || transfer.fromUserName},`,
+    `Hola ${recipientName}, acá va el resumen del grupo para que quede todo bien ordenado. Cuentas Claras conservan la amistad.`,
+    '',
+    groupName,
     '',
     ...buildSettlementBaseLines(expenses, users),
-    ...personalizedLines,
     '',
     ...footerLines,
   ].join('\n');
@@ -314,7 +289,7 @@ export default function HomeScreen({ navigation, route }: any) {
       return;
     }
 
-    const message = buildIndividualSettlementMessage(debtor, transfer, expenses, users);
+    const message = buildIndividualSettlementMessage(debtor?.name?.trim() || transfer.fromUserName, groupName, expenses, users);
     const appUrl = `whatsapp://send?phone=${normalizedPhone}&text=${encodeURIComponent(message)}`;
     const webUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
 

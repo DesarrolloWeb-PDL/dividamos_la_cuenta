@@ -112,11 +112,13 @@ Usá este caso para validar línea por línea el mensaje grupal y el individual.
    ```
 
 8. Tocá el botón `WhatsApp` sobre una transferencia de `Daniel`.
-   Resultado esperado: se abre el chat de Daniel con un mensaje individual que conserva el resumen del grupo y agrega su detalle personal.
+   Resultado esperado: se abre el chat de Daniel con un mensaje individual igual al grupal, manteniendo el mismo contenido y con `**` en el cierre.
 9. Verificá que el mensaje individual se vea así:
 
    ```text
-   Hola Daniel,
+   Hola Daniel, acá va el resumen del grupo para que quede todo bien ordenado. Cuentas Claras conservan la amistad.
+
+   LOS CAPA PRETA
 
    Total gastado: $500000.00.
    - Beto: puso $450000.00 en total
@@ -126,10 +128,6 @@ Usá este caso para validar línea por línea el mensaje grupal y el individual.
    División total c/u: $25.000,00
    Cada integrante tiene que pagar $22.500,00 A Beto: beto.mp
    Cada integrante tiene que pagar $2.500,00 A Dani: dani.mp
-
-   Tu parte total en este grupo es: $25.000,00
-   Te toca pagar $22.500,00 A Beto: beto.mp
-   Te toca pagar $2.500,00 A Dani: dani.mp
 
    **
    Este mensaje fue creado por la aplicación Cuentas Claras.
