@@ -72,7 +72,73 @@
 28. Probá `Compartir mensaje corto` sin link de grupo configurado.
    Resultado esperado: se comparte una versión breve de la liquidación, pensada para copiar o reenviar rápido.
 29. Tocá el botón `WhatsApp` en una transferencia individual.
-   Resultado esperado: abre el chat del deudor correcto con un mensaje precargado indicando cuánto, a quién pagar y el alias/link de cobro si está cargado.
+   Resultado esperado: abre el chat del deudor correcto con un mensaje precargado que incluye el resumen del grupo y el detalle exacto de cuánto le toca pagar a cada pagador, con alias/link de cobro si está cargado.
+
+## Escenario exacto para WhatsApp
+
+Usá este caso para validar línea por línea el mensaje grupal y el individual.
+
+1. Creá un grupo llamado `LOS CAPA PRETA`.
+   Resultado esperado: el grupo queda creado y podés entrar al resumen.
+2. Cargá 20 integrantes en el grupo.
+   Resultado esperado: el contador de integrantes muestra 20.
+3. Asegurate de que `Beto` tenga alias/link de cobro `beto.mp` y `Dani` tenga alias/link de cobro `dani.mp`.
+   Resultado esperado: esos datos quedan guardados para compartir.
+4. Creá un gasto total de $500000 con 20 participantes.
+   Resultado esperado: el gasto acepta a los 20 participantes.
+5. Marcá dos pagadores: `Beto` paga $450000 y `Dani` paga $50000.
+   Resultado esperado: la app deja guardar porque la suma de pagos coincide con el total.
+6. Usá división igualitaria.
+   Resultado esperado: la vista previa muestra consumo de $25000 por participante.
+7. Tocá `Compartir monto por integrante`.
+   Resultado esperado: el mensaje grupal queda con este formato:
+
+   ```text
+   LOS CAPA PRETA
+
+   Total gastado: $500000.00.
+   - Beto: puso $450000.00 en total
+   - Dani: puso $50000.00 en total
+
+   PARTICIPANTES: (20)
+   División total c/u: $25.000,00
+   Cada integrante tiene que pagar $22.500,00 A Beto: beto.mp
+   Cada integrante tiene que pagar $2.500,00 A Dani: dani.mp
+
+   ****
+   Este mensaje fue creado por la aplicación Cuentas Claras.
+   https://dividamos-la-cuenta.vercel.app/
+   Muchas gracias por usar la aplicación.
+   ```
+
+8. Tocá el botón `WhatsApp` sobre una transferencia de `Daniel`.
+   Resultado esperado: se abre el chat de Daniel con un mensaje individual que conserva el resumen del grupo y agrega su detalle personal.
+9. Verificá que el mensaje individual se vea así:
+
+   ```text
+   Hola Daniel,
+
+   Total gastado: $500000.00.
+   - Beto: puso $450000.00 en total
+   - Dani: puso $50000.00 en total
+
+   PARTICIPANTES: (20)
+   División total c/u: $25.000,00
+   Cada integrante tiene que pagar $22.500,00 A Beto: beto.mp
+   Cada integrante tiene que pagar $2.500,00 A Dani: dani.mp
+
+   Tu parte total en este grupo es: $25.000,00
+   Te toca pagar $22.500,00 A Beto: beto.mp
+   Te toca pagar $2.500,00 A Dani: dani.mp
+
+   **
+   Este mensaje fue creado por la aplicación Cuentas Claras.
+   https://dividamos-la-cuenta.vercel.app/
+   Muchas gracias por usar la aplicación.
+   ```
+
+10. Si repetís la prueba con gastos donde no participan los mismos integrantes, revisá que el grupal NO muestre `División total c/u`.
+    Resultado esperado: el mensaje muestra `División variable según los gastos en los que participó cada integrante.` y luego `Detalle por participante:` con el desglose exacto.
 
 ## Casos de borde
 
