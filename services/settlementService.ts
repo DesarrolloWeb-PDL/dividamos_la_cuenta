@@ -37,6 +37,27 @@ export type SettlementSummary = {
   transfers: SettlementTransfer[];
 };
 
+export type SettlementMemberSummary = {
+  userId: string;
+  userName: string;
+  paid: number;
+  consumed: number;
+  balance: number;
+};
+
+export type SettlementPayerSummary = {
+  userId: string;
+  userName: string;
+  paid: number;
+  amountToReceive: number;
+};
+
+export type DetailedSettlementSummary = SettlementSummary & {
+  totalAmount: number;
+  members: SettlementMemberSummary[];
+  payers: SettlementPayerSummary[];
+};
+
 export type SettlementMessageVariant = 'full' | 'transfers-only' | 'short';
 
 export type ExpenseShareDetail = {
@@ -103,19 +124,26 @@ export function calculateExpenseBreakdown(expense: ExpenseLike, users: UserLike[
   };
 }
 
-export function calculateSettlement(expenses: ExpenseLike[], users: UserLike[]): SettlementSummary {
+function calculateSettlementData(expenses: ExpenseLike[], users: UserLike[]) {
   const userDirectory = buildUserDirectory(users);
-
   const balancesInCents = new Map<string, number>();
+  const paidInCents = new Map<string, number>();
+  const consumedInCents = new Map<string, number>();
+  let totalAmountInCents = 0;
 
   users.forEach(user => {
-    balancesInCents.set(user._id.toString(), 0);
+    const userId = user._id.toString();
+    balancesInCents.set(userId, 0);
+    paidInCents.set(userId, 0);
+    consumedInCents.set(userId, 0);
   });
 
   expenses.forEach(expense => {
     if (expense.participants.length === 0 || expense.payments.length === 0) {
       return;
     }
+
+    totalAmountInCents += toCents(expense.amount);
 
     const shares = splitExpenseInCents(expense.amount, expense.participants, expense.participantAmounts);
 
@@ -124,9 +152,15 @@ export function calculateSettlement(expenses: ExpenseLike[], users: UserLike[]):
         return;
       }
 
+      const paymentInCents = toCents(payment.amount);
+
       balancesInCents.set(
         payment.userId,
-        (balancesInCents.get(payment.userId) ?? 0) + toCents(payment.amount),
+        (balancesInCents.get(payment.userId) ?? 0) + paymentInCents,
+      );
+      paidInCents.set(
+        payment.userId,
+        (paidInCents.get(payment.userId) ?? 0) + paymentInCents,
       );
     });
 
@@ -134,6 +168,10 @@ export function calculateSettlement(expenses: ExpenseLike[], users: UserLike[]):
       balancesInCents.set(
         share.participantId,
         (balancesInCents.get(share.participantId) ?? 0) - share.shareInCents,
+      );
+      consumedInCents.set(
+        share.participantId,
+        (consumedInCents.get(share.participantId) ?? 0) + share.shareInCents,
       );
     });
   });
@@ -184,6 +222,86 @@ export function calculateSettlement(expenses: ExpenseLike[], users: UserLike[]):
   }
 
   return {
+    userDirectory,
+    balances,
+    transfers,
+    paidInCents,
+    consumedInCents,
+    totalAmountInCents,
+  };
+}
+
+export function calculateSettlement(expenses: ExpenseLike[], users: UserLike[]): SettlementSummary {
+  const { balances, transfers } = calculateSettlementData(expenses, users);
+
+  return {
+    balances: balances.map(balance => ({
+      userId: balance.userId,
+      userName: balance.userName,
+      balance: fromCents(balance.balanceInCents),
+    })),
+    transfers,
+  };
+}
+
+export function calculateDetailedSettlement(expenses: ExpenseLike[], users: UserLike[]): DetailedSettlementSummary {
+  const {
+    balances,
+    transfers,
+    paidInCents,
+    consumedInCents,
+    totalAmountInCents,
+    userDirectory,
+  } = calculateSettlementData(expenses, users);
+
+  const allUserIds = new Set<string>([
+    ...Array.from(paidInCents.keys()),
+    ...Array.from(consumedInCents.keys()),
+  ]);
+
+  const members = Array.from(allUserIds)
+    .map(userId => {
+      const paid = paidInCents.get(userId) ?? 0;
+      const consumed = consumedInCents.get(userId) ?? 0;
+      const balance = balances.find(entry => entry.userId === userId)?.balanceInCents ?? 0;
+
+      return {
+        userId,
+        userName: userDirectory.get(userId) ?? 'Usuario desconocido',
+        paid: fromCents(paid),
+        consumed: fromCents(consumed),
+        balance: fromCents(balance),
+      };
+    })
+    .filter(member => member.paid > 0 || member.consumed > 0)
+    .sort((left, right) => {
+      if (right.consumed !== left.consumed) {
+        return right.consumed - left.consumed;
+      }
+
+      return right.paid - left.paid;
+    });
+
+  const payers = members
+    .filter(member => member.paid > 0)
+    .map(member => ({
+      userId: member.userId,
+      userName: member.userName,
+      paid: member.paid,
+      amountToReceive: member.balance > 0 ? member.balance : 0,
+    }))
+    .sort((left, right) => {
+      if (right.amountToReceive !== left.amountToReceive) {
+        return right.amountToReceive - left.amountToReceive;
+      }
+
+      return right.paid - left.paid;
+    });
+
+  return {
+    totalAmount: fromCents(totalAmountInCents),
+    members,
+    payers,
     balances: balances.map(balance => ({
       userId: balance.userId,
       userName: balance.userName,

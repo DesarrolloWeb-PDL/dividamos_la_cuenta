@@ -6,7 +6,7 @@ import { deleteExpense, deleteExpensesByGroup, getExpensesByGroup } from '../ser
 import { getUsersByGroup } from '../services/userService';
 import { getGroupById } from '../services/groupService';
 import { formatPaymentHandleForMessage } from '../services/paymentHandle';
-import { calculateExpenseBreakdown, calculateSettlement, formatDirectTransferMessage, formatSettlementMessage, SettlementMessageVariant, SettlementTransfer, UserBalance } from '../services/settlementService';
+import { calculateDetailedSettlement, calculateExpenseBreakdown, calculateSettlement, formatDirectTransferMessage, formatSettlementMessage, SettlementMessageVariant, SettlementTransfer, UserBalance } from '../services/settlementService';
 import CustomButton from '../components/CustomButton';
 import { AppPalette, useAppTheme } from '../theme/appTheme';
 
@@ -57,8 +57,7 @@ function formatTransferTarget(user?: UserView) {
 const APP_SHARE_LINK = 'https://dividamos-la-cuenta.vercel.app/';
 
 function buildGroupAmountsMessage(groupName: string, expenses: ExpenseView[], users: UserView[]) {
-  const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const participantCount = users.length;
+  const summary = calculateDetailedSettlement(expenses, users);
   const footerLines = [
     '****',
     'Este mensaje fue creado por la aplicación Cuentas Claras.',
@@ -66,23 +65,51 @@ function buildGroupAmountsMessage(groupName: string, expenses: ExpenseView[], us
     'Muchas gracias por usar la aplicación.',
   ];
 
-  if (participantCount === 0) {
+  if (summary.members.length === 0) {
     return [
       groupName,
       '',
-      'No hay integrantes cargados.',
+      'No hay movimientos cargados para este grupo.',
       '',
       ...footerLines,
     ].join('\n');
   }
 
-  const amountPerUser = totalAmount / participantCount;
+  const memberLines = summary.members.map(member => {
+    const balanceLabel = member.balance > 0
+      ? `le tienen que pasar $${member.balance.toFixed(2)}`
+      : member.balance < 0
+        ? `tiene que pasar $${Math.abs(member.balance).toFixed(2)}`
+        : 'queda saldado';
+
+    return `- ${member.userName}: consumió $${member.consumed.toFixed(2)} | pagó $${member.paid.toFixed(2)} | ${balanceLabel}`;
+  });
+
+  const payerLines = summary.payers.length === 0
+    ? ['- No hubo pagadores cargados.']
+    : summary.payers.map(payer => (
+      `- ${payer.userName}: puso $${payer.paid.toFixed(2)} en total y le tienen que pasar $${payer.amountToReceive.toFixed(2)}`
+    ));
+
+  const transferLines = summary.transfers.length === 0
+    ? ['- No hace falta transferir nada.']
+    : summary.transfers.map(transfer => (
+      `- ${transfer.fromUserName} le paga a ${transfer.toUserName} $${transfer.amount.toFixed(2)}`
+    ));
 
   return [
     groupName,
     '',
-    `Total gastado: $${totalAmount.toFixed(2)}.`,
-    `Cada integrante tiene que pagar $${amountPerUser.toFixed(2)}.`,
+    `Total gastado: $${summary.totalAmount.toFixed(2)}.`,
+    '',
+    'Resumen por integrante:',
+    ...memberLines,
+    '',
+    'Pagadores:',
+    ...payerLines,
+    '',
+    'Transferencias sugeridas:',
+    ...transferLines,
     '',
     ...footerLines,
   ].join('\n');
