@@ -185,13 +185,31 @@ function buildShortGroupMessage(groupName: string, expenses: ExpenseView[], user
   ].join('\n');
 }
 
-function buildIndividualSettlementMessage(groupName: string, expenses: ExpenseView[], users: UserView[]) {
+function buildIndividualSettlementMessage(transfer: SettlementTransfer, groupName: string, expenses: ExpenseView[], users: UserView[]) {
+  const summary = calculateDetailedSettlement(expenses, users);
   const footerLines = [
     '**',
     'Este mensaje fue creado por la aplicación Cuentas Claras.',
     APP_SHARE_LINK,
     'Muchas gracias por usar la aplicación.',
   ];
+  const creditor = users.find(user => user._id.toString() === transfer.toUserId);
+  const creditorTarget = buildPayerTargetByValues(
+    creditor?.alias?.trim() || creditor?.name || transfer.toUserName,
+    creditor?.paymentHandle?.trim(),
+  );
+
+  if (!summary.isUniformSplit) {
+    return [
+      groupName,
+      '',
+      `Total gastado: $${formatTotalAmount(summary.totalAmount)}.`,
+      `Te toca pagar $${transfer.amount.toFixed(2)} a ${creditorTarget}.`,
+      '',
+      ...footerLines,
+    ].join('\n');
+  }
+
   const baseLines = buildSettlementBaseLines(expenses, users);
 
   return [
@@ -320,7 +338,7 @@ export default function HomeScreen({ navigation, route }: any) {
       return;
     }
 
-    const message = buildIndividualSettlementMessage(groupName, expenses, users);
+    const message = buildIndividualSettlementMessage(transfer, groupName, expenses, users);
     const appUrl = `whatsapp://send?phone=${normalizedPhone}&text=${encodeURIComponent(message)}`;
     const webUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
 

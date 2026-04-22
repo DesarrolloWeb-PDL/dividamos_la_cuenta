@@ -134,6 +134,8 @@ Usá este caso para validar línea por línea el mensaje grupal y el individual.
 
 10. Si repetís la prueba con gastos donde no participan los mismos integrantes, revisá que el grupal NO muestre `División total c/u`.
     Resultado esperado: el mensaje muestra `División variable según los gastos en los que participó cada integrante.` y luego `Detalle por participante:` con el desglose exacto.
+11. En ese mismo escenario de división variable, tocá el botón `WhatsApp` de una transferencia individual.
+   Resultado esperado: el mensaje individual NO copia `Detalle por participante:`; sólo muestra el grupo, el total gastado y cuánto tiene que pagar a quién con alias/link si está cargado.
 
 ## Casos de borde
 
