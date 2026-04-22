@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Cuentas Claras",
-  "short_name": "Cuentas Claras",
-  "description": "Cuentas Claras organiza gastos compartidos, calcula saldos y conserva la amistad.",
+  "name": "DIVIDAMOS LA CUENTA",
+  "short_name": "DIVIDAMOS",
+  "description": "DIVIDAMOS LA CUENTA organiza gastos compartidos. Cuentas claras conservan la amistad.",
   "lang": "es",
   "dir": "ltr",
   "start_url": "/",

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Cuentas Claras",
+    "name": "DIVIDAMOS LA CUENTA",
     "slug": "dividamos-cta",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,12 +8,12 @@
     "newArchEnabled": true,
     "web": {
       "output": "single",
-      "name": "Cuentas Claras",
-      "shortName": "Cuentas Claras",
+      "name": "DIVIDAMOS LA CUENTA",
+      "shortName": "DIVIDAMOS",
       "lang": "es",
       "scope": "/",
       "themeColor": "#0f172a",
-      "description": "Cuentas Claras organiza gastos compartidos, calcula saldos y conserva la amistad.",
+      "description": "DIVIDAMOS LA CUENTA organiza gastos compartidos. Cuentas claras conservan la amistad.",
       "display": "standalone",
       "startUrl": "/",
       "orientation": "portrait",
@@ -24,7 +24,7 @@
       [
         "expo-contacts",
         {
-          "contactsPermission": "Permití que Cuentas Claras acceda a tus contactos para sumar integrantes más rápido."
+          "contactsPermission": "Permití que DIVIDAMOS LA CUENTA acceda a tus contactos para sumar integrantes más rápido."
         }
       ]
     ]

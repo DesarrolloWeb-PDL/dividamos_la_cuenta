@@ -3,5 +3,5 @@ const runtimeEnv = typeof globalThis !== 'undefined'
 	: undefined;
 
 export const APP_PUBLIC_URL = runtimeEnv?.EXPO_PUBLIC_APP_PUBLIC_URL?.trim() || 'https://dividamos-la-cuenta.vercel.app/';
-export const APP_DISPLAY_NAME = 'Cuentas Claras';
-export const APP_TAGLINE = 'conservan la amistad';
+export const APP_DISPLAY_NAME = 'DIVIDAMOS LA CUENTA';
+export const APP_TAGLINE = 'Cuentas claras conservan la amistad';
