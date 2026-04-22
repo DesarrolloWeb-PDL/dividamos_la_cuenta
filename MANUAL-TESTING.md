@@ -112,15 +112,24 @@ Usá este caso para validar línea por línea el mensaje grupal y el individual.
    ```
 
 8. Tocá el botón `WhatsApp` sobre una transferencia de `Daniel`.
-   Resultado esperado: se abre el chat de Daniel con un mensaje individual corto, sin el detalle largo por integrante.
+   Resultado esperado: se abre el chat de Daniel con el mismo bloque de resumen grupal, sin saludo inicial y con cierre `**`.
 9. Verificá que el mensaje individual se vea así:
 
    ```text
-   Hola Daniel,
-
    LOS CAPA PRETA
    Total gastado: $500000.00.
-   Te toca pagar $22500.00 a Beto: beto.mp.
+   - Beto: puso $450000.00 en total
+   - Dani: puso $50000.00 en total
+
+   PARTICIPANTES: (20)
+   División total c/u: $25.000,00
+   Cada integrante tiene que pagar $22.500,00 A Beto: beto.mp
+   Cada integrante tiene que pagar $2.500,00 A Dani: dani.mp
+
+   **
+   Este mensaje fue creado por la aplicación Cuentas Claras.
+   https://dividamos-la-cuenta.vercel.app/
+   Muchas gracias por usar la aplicación.
    ```
 
 10. Si repetís la prueba con gastos donde no participan los mismos integrantes, revisá que el grupal NO muestre `División total c/u`.
