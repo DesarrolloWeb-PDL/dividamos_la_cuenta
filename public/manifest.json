@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Dividamos CTA",
-  "short_name": "Dividamos",
-  "description": "App para dividir gastos por grupo, calcular saldos y compartir liquidaciones.",
+  "name": "Cuentas Claras",
+  "short_name": "Cuentas Claras",
+  "description": "Cuentas Claras organiza gastos compartidos, calcula saldos y conserva la amistad.",
   "lang": "es",
   "dir": "ltr",
   "start_url": "/",

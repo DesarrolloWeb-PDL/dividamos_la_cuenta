@@ -133,7 +133,7 @@ Usá este caso para validar línea por línea el mensaje grupal y el individual.
    ```
 
 10. Si repetís la prueba con gastos donde no participan los mismos integrantes, revisá que el grupal NO muestre `División total c/u`.
-    Resultado esperado: el mensaje muestra `División variable según los gastos en los que participó cada integrante.` y luego `Detalle por participante:` con el desglose exacto.
+   Resultado esperado: el mensaje muestra `División variable según los gastos en los que participó cada integrante.` y luego sólo líneas cortas de pago, sin `Detalle por participante:` ni consumo por integrante.
 11. En ese mismo escenario de división variable, tocá el botón `WhatsApp` de una transferencia individual.
    Resultado esperado: el mensaje individual NO copia `Detalle por participante:`; sólo muestra el grupo, el total gastado y cuánto tiene que pagar a quién con alias/link si está cargado.
 
@@ -162,7 +162,7 @@ Usá este caso para validar línea por línea el mensaje grupal y el individual.
 11. Abrí la versión web publicada desde el navegador del celular y revisá la tarjeta `Instalar app`.
    Resultado esperado: si Chrome dispara el prompt, aparece el botón para instalar; si no, se muestran instrucciones manuales.
 12. Verificá el acceso directo instalado en la pantalla de inicio del celular.
-   Resultado esperado: el icono usa la identidad visual de Dividamos CTA y no un favicon genérico del navegador.
+   Resultado esperado: el icono usa la identidad visual de Cuentas Claras y no un favicon genérico del navegador.
 13. Abrí la app instalada y volvé a cerrarla desde multitarea.
    Resultado esperado: al reabrirla sigue entrando sin barra visible de navegador o con mínima UI según soporte del sistema.
 

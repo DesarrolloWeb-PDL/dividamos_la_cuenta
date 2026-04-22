@@ -69,7 +69,7 @@ function registerServiceWorker() {
     return;
   }
 
-  navigator.serviceWorker.register('/sw.js').then(registration => {
+  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(registration => {
     activeRegistration = registration;
     bindServiceWorkerRefreshTriggers();
     void triggerServiceWorkerUpdateCheck();

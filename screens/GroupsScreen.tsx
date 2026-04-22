@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import CustomButton from '../components/CustomButton';
+import { APP_DISPLAY_NAME, APP_TAGLINE } from '../services/appConfig';
 import { confirmAction } from '../services/dialogService';
 import { deleteExpensesByGroup, getAllExpenses } from '../services/expenseService';
 import { deleteGroup, getAllGroups } from '../services/groupService';
@@ -88,7 +89,7 @@ export default function GroupsScreen({ navigation }: any) {
     const wasInstalled = await promptPwaInstall();
 
     if (wasInstalled) {
-      Alert.alert('App instalada', 'Ahora podés abrir Dividamos desde la pantalla de inicio.');
+      Alert.alert('App instalada', `Ahora podés abrir ${APP_DISPLAY_NAME} desde la pantalla de inicio.`);
       return;
     }
 
@@ -160,19 +161,27 @@ export default function GroupsScreen({ navigation }: any) {
         <View style={styles.headerStack}>
           <View style={styles.heroCard}>
             <View style={styles.heroTopRow}>
-              <Text style={styles.eyebrow}>Dividamos la Cuenta</Text>
+              <Text style={styles.eyebrow}>Aplicación para dividir gastos</Text>
               <Pressable onPress={cycleMode} style={styles.themeToggle}>
                 <Text style={styles.themeToggleIcon}>{mode === 'dark' ? '☀' : '☾'}</Text>
               </Pressable>
             </View>
-            <Text style={styles.title}>Tus grupos</Text>
+            <Text style={styles.title}>{APP_DISPLAY_NAME}</Text>
+            <Text style={styles.tagline}>{APP_TAGLINE}</Text>
             <Text style={styles.subtitle}>
-              Cada grupo tiene sus integrantes, sus gastos y su liquidación independiente.
+              Organizá grupos, cargá gastos compartidos y resolvé cuánto tiene que pagar cada integrante sin mensajes eternos ni cuentas confusas.
             </Text>
           </View>
           <View style={styles.actionsCard}>
-            <Text style={styles.sectionHeading}>Empezar</Text>
+            <Text style={styles.sectionHeading}>Pantalla principal</Text>
+            <Text style={styles.introText}>
+              Cada grupo conserva su propia liquidación, sus integrantes y sus gastos para que puedas ordenar viajes, salidas o compras comunes en pocos pasos.
+            </Text>
             <CustomButton title="Crear nuevo grupo" onPress={() => navigation.navigate('AddGroup')} />
+          </View>
+          <View style={styles.signatureCard}>
+            <Text style={styles.signatureLabel}>Última versión</Text>
+            <Text style={styles.signatureText}>Desarrollado por Desarrollo Web - PDL</Text>
           </View>
           {pwaInstallState.supported && !pwaInstallState.installed ? (
             <View style={styles.installCard}>
@@ -234,11 +243,19 @@ const createStyles = (colors: AppPalette) => StyleSheet.create({
   themeToggleIcon: { color: colors.textOnHero, fontWeight: '700', fontSize: 18 },
   title: { fontSize: 28, fontWeight: '700', color: colors.textOnHero, marginBottom: 6 },
   subtitle: { fontSize: 15, lineHeight: 22, color: colors.heroMuted },
+  tagline: {
+    fontSize: 14,
+    lineHeight: 18,
+    color: colors.heroMuted,
+    marginBottom: 10,
+    fontWeight: '600',
+  },
   actionsCard: {
     backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 14,
   },
+  introText: { color: colors.textMuted, lineHeight: 20, marginBottom: 4 },
   installCard: {
     backgroundColor: colors.surface,
     borderRadius: 16,
@@ -246,6 +263,22 @@ const createStyles = (colors: AppPalette) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.success,
   },
+  signatureCard: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  signatureLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  signatureText: { color: colors.text, fontSize: 15, fontWeight: '600' },
   installText: { color: colors.textMuted, lineHeight: 20 },
   sectionHeading: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },
   separator: { height: 12 },

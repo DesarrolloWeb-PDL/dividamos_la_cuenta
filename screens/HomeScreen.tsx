@@ -5,6 +5,7 @@ import { confirmAction } from '../services/dialogService';
 import { deleteExpense, deleteExpensesByGroup, getExpensesByGroup } from '../services/expenseService';
 import { getUsersByGroup } from '../services/userService';
 import { getGroupById } from '../services/groupService';
+import { APP_PUBLIC_URL } from '../services/appConfig';
 import { calculateDetailedSettlement, calculateExpenseBreakdown, calculateSettlement, formatSettlementMessage, SettlementMessageVariant, SettlementTransfer, UserBalance } from '../services/settlementService';
 import CustomButton from '../components/CustomButton';
 import { AppPalette, useAppTheme } from '../theme/appTheme';
@@ -72,7 +73,7 @@ function buildPayerTargetByValues(name: string, paymentHandle?: string) {
   return `${name}: ${paymentHandle}`;
 }
 
-const APP_SHARE_LINK = 'https://dividamos-la-cuenta.vercel.app/';
+const APP_SHARE_LINK = APP_PUBLIC_URL;
 
 function buildSettlementBaseLines(expenses: ExpenseView[], users: UserView[]) {
   const summary = calculateDetailedSettlement(expenses, users);
@@ -102,26 +103,20 @@ function buildSettlementBaseLines(expenses: ExpenseView[], users: UserView[]) {
       return `Cada integrante tiene que pagar $${formatPerParticipantAmount(amountPerParticipant)} A ${payerTarget}`;
     });
 
-  const participantLines = !summary.isUniformSplit
-    ? [
-      '',
-      'Detalle por participante:',
-      ...participants.map(participant => {
-        const obligationSummary = participant.obligations.length > 0
-          ? participant.obligations.map(obligation => {
-            const payerUser = payerUsers.get(obligation.payerUserId);
-            const payerTarget = buildPayerTargetByValues(
-              payerUser?.alias?.trim() || payerUser?.name || obligation.payerUserName,
-              payerUser?.paymentHandle?.trim(),
-            );
+  const transferLines = !summary.isUniformSplit
+    ? (
+      summary.transfers.length === 0
+        ? ['- No hay transferencias pendientes.']
+        : summary.transfers.map(transfer => {
+          const payerUser = payerUsers.get(transfer.toUserId);
+          const payerTarget = buildPayerTargetByValues(
+            payerUser?.alias?.trim() || payerUser?.name || transfer.toUserName,
+            payerUser?.paymentHandle?.trim(),
+          );
 
-            return `$${formatPerParticipantAmount(obligation.amount)} a ${payerTarget}`;
-          }).join(' | ')
-          : 'sin pagos pendientes';
-
-        return `- ${participant.userName}: consumió $${formatPerParticipantAmount(participant.consumed)} | ${obligationSummary}`;
-      }),
-    ]
+          return `- ${transfer.fromUserName} paga $${formatPerParticipantAmount(transfer.amount)} a ${payerTarget}`;
+        })
+    )
     : [];
 
   return [
@@ -133,7 +128,7 @@ function buildSettlementBaseLines(expenses: ExpenseView[], users: UserView[]) {
       ? `División total c/u: $${formatPerParticipantAmount(divisionPerParticipant)}`
       : 'División variable según los gastos en los que participó cada integrante.',
     ...(summary.isUniformSplit ? distributionLines : []),
-    ...participantLines,
+    ...transferLines,
   ];
 }
 

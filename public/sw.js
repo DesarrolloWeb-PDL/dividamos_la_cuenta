@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dividamos-cta-v2';
+const CACHE_NAME = 'dividamos-cta-v3';
 const APP_SHELL = ['/', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 function isStaticAsset(requestUrl) {
