@@ -73,6 +73,16 @@ function buildPayerTargetByValues(name: string, paymentHandle?: string) {
   return `${name}: ${paymentHandle}`;
 }
 
+function getPayeeDisplayName(user?: UserView, fallbackName?: string) {
+  return user?.alias?.trim() || user?.name || fallbackName || 'Sin asignar';
+}
+
+function getRawPaymentHandle(paymentHandle?: string) {
+  const normalizedPaymentHandle = paymentHandle?.trim();
+
+  return normalizedPaymentHandle || null;
+}
+
 const APP_SHARE_LINK = APP_PUBLIC_URL;
 
 function buildSettlementBaseLines(expenses: ExpenseView[], users: UserView[]) {
@@ -150,15 +160,13 @@ function buildGroupAmountsMessage(groupName: string, expenses: ExpenseView[], us
   ].join('\n');
 }
 
-function buildShortGroupMessage(groupName: string, expenses: ExpenseView[], users: UserView[], transfers: SettlementTransfer[]) {
-  const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+function buildShortGroupMessage(groupName: string, users: UserView[], transfers: SettlementTransfer[]) {
   const usersById = new Map(users.map(user => [user._id.toString(), user]));
 
   if (transfers.length === 0) {
     return [
       groupName,
       '',
-      `Total gastado: $${formatTotalAmount(totalAmount)}.`,
       'No hay transferencias pendientes.',
     ].join('\n');
   }
@@ -166,54 +174,26 @@ function buildShortGroupMessage(groupName: string, expenses: ExpenseView[], user
   return [
     groupName,
     '',
-    `Total gastado: $${formatTotalAmount(totalAmount)}.`,
-    '',
     ...transfers.map(transfer => {
       const creditor = usersById.get(transfer.toUserId);
-      const creditorTarget = buildPayerTargetByValues(
-        creditor?.alias?.trim() || creditor?.name || transfer.toUserName,
-        creditor?.paymentHandle?.trim(),
-      );
+      const creditorName = getPayeeDisplayName(creditor, transfer.toUserName);
 
-      return `- ${transfer.fromUserName} paga $${transfer.amount.toFixed(2)} a ${creditorTarget}`;
+      return `- ${transfer.fromUserName} paga $${transfer.amount.toFixed(2)} a ${creditorName}`;
     }),
   ].join('\n');
 }
 
-function buildIndividualSettlementMessage(transfer: SettlementTransfer, groupName: string, expenses: ExpenseView[], users: UserView[]) {
-  const summary = calculateDetailedSettlement(expenses, users);
-  const footerLines = [
-    '**',
-    'Este mensaje fue creado por la aplicación Cuentas Claras.',
-    APP_SHARE_LINK,
-    'Muchas gracias por usar la aplicación.',
-  ];
+function buildIndividualSettlementMessage(transfer: SettlementTransfer, groupName: string, users: UserView[]) {
   const creditor = users.find(user => user._id.toString() === transfer.toUserId);
-  const creditorTarget = buildPayerTargetByValues(
-    creditor?.alias?.trim() || creditor?.name || transfer.toUserName,
-    creditor?.paymentHandle?.trim(),
-  );
-
-  if (!summary.isUniformSplit) {
-    return [
-      groupName,
-      '',
-      `Total gastado: $${formatTotalAmount(summary.totalAmount)}.`,
-      `Te toca pagar $${transfer.amount.toFixed(2)} a ${creditorTarget}.`,
-      '',
-      ...footerLines,
-    ].join('\n');
-  }
-
-  const baseLines = buildSettlementBaseLines(expenses, users);
+  const creditorName = getPayeeDisplayName(creditor, transfer.toUserName);
+  const paymentHandle = getRawPaymentHandle(creditor?.paymentHandle);
 
   return [
     groupName,
     '',
-    ...baseLines,
-    '',
-    ...footerLines,
-  ].join('\n');
+    `Te toca pagar $${transfer.amount.toFixed(2)} a ${creditorName}.`,
+    paymentHandle,
+  ].filter(Boolean).join('\n');
 }
 
 export default function HomeScreen({ navigation, route }: any) {
@@ -277,7 +257,7 @@ export default function HomeScreen({ navigation, route }: any) {
     const message = variant === 'full'
       ? buildGroupAmountsMessage(groupName, expenses, users)
       : variant === 'short'
-        ? buildShortGroupMessage(groupName, expenses, users, transfers)
+        ? buildShortGroupMessage(groupName, users, transfers)
       : `${groupName}\n\n${formatSettlementMessage({ balances, transfers }, variant)}`;
     const groupWhatsappLink = groupDetails?.whatsappGroupLink?.trim();
 
@@ -333,7 +313,7 @@ export default function HomeScreen({ navigation, route }: any) {
       return;
     }
 
-    const message = buildIndividualSettlementMessage(transfer, groupName, expenses, users);
+    const message = buildIndividualSettlementMessage(transfer, groupName, users);
     const appUrl = `whatsapp://send?phone=${normalizedPhone}&text=${encodeURIComponent(message)}`;
     const webUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
 
