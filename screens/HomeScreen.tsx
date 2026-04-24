@@ -6,7 +6,8 @@ import { deleteExpense, deleteExpensesByGroup, getExpensesByGroup } from '../ser
 import { getUsersByGroup } from '../services/userService';
 import { getGroupById } from '../services/groupService';
 import { APP_PUBLIC_URL } from '../services/appConfig';
-import { calculateDetailedSettlement, calculateExpenseBreakdown, calculateSettlement, formatSettlementMessage, SettlementMessageVariant, SettlementTransfer, UserBalance } from '../services/settlementService';
+import { calculateDetailedSettlement, calculateExpenseBreakdown, calculateSettlement, SettlementTransfer, UserBalance } from '../services/settlementService';
+import { detectPaymentHandleKind, getPaymentHandleLabel } from '../services/paymentHandle';
 import CustomButton from '../components/CustomButton';
 import { AppPalette, useAppTheme } from '../theme/appTheme';
 
@@ -47,32 +48,6 @@ function formatTotalAmount(amount: number) {
   return amount.toFixed(2);
 }
 
-function formatPerParticipantAmount(amount: number) {
-  return amount.toLocaleString('es-AR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function buildPayerTarget(user: UserView) {
-  const displayName = user.alias?.trim() || user.name;
-  const paymentHandle = user.paymentHandle?.trim();
-
-  if (!paymentHandle) {
-    return displayName;
-  }
-
-  return `${displayName}: ${paymentHandle}`;
-}
-
-function buildPayerTargetByValues(name: string, paymentHandle?: string) {
-  if (!paymentHandle) {
-    return name;
-  }
-
-  return `${name}: ${paymentHandle}`;
-}
-
 function getPayeeDisplayName(user?: UserView, fallbackName?: string) {
   return user?.alias?.trim() || user?.name || fallbackName || 'Sin asignar';
 }
@@ -83,19 +58,42 @@ function getRawPaymentHandle(paymentHandle?: string) {
   return normalizedPaymentHandle || null;
 }
 
+function formatPaymentHandleForShare(paymentHandle?: string) {
+  const normalizedPaymentHandle = getRawPaymentHandle(paymentHandle);
+
+  if (!normalizedPaymentHandle) {
+    return null;
+  }
+
+  if (detectPaymentHandleKind(normalizedPaymentHandle) === 'link') {
+    return normalizedPaymentHandle;
+  }
+
+  return `${getPaymentHandleLabel(normalizedPaymentHandle)}: ${normalizedPaymentHandle}`;
+}
+
 const APP_SHARE_LINK = APP_PUBLIC_URL;
 
-function buildSettlementBaseLines(expenses: ExpenseView[], users: UserView[]) {
+function buildGroupAmountsMessage(groupName: string, expenses: ExpenseView[], users: UserView[]) {
   const summary = calculateDetailedSettlement(expenses, users);
+  const footerLines = [
+    '**',
+    'Este mensaje fue creado por la aplicación Cuentas Claras.',
+    APP_SHARE_LINK,
+    'Muchas gracias por usar la aplicación.',
+  ];
 
   if (summary.members.length === 0) {
     return [
+      groupName,
+      '',
       'No hay movimientos cargados para este grupo.',
-    ];
+      '',
+      ...footerLines,
+    ].join('\n');
   }
 
-  const participants = summary.participants;
-  const participantCount = participants.length;
+  const participantCount = summary.participants.length;
   const divisionPerParticipant = participantCount > 0 ? summary.totalAmount / participantCount : 0;
   const payerUsers = new Map(users.map(user => [user._id.toString(), user]));
 
@@ -103,83 +101,28 @@ function buildSettlementBaseLines(expenses: ExpenseView[], users: UserView[]) {
     ? ['- No hubo pagadores cargados.']
     : summary.payers.map(payer => `- ${payer.userName}: puso $${formatTotalAmount(payer.paid)} en total`);
 
-  const distributionLines = summary.payers.length === 0
+  const divisionLines = summary.payers.length === 0
     ? ['- No hay pagos para repartir entre participantes.']
     : summary.payers.map(payer => {
       const payerUser = payerUsers.get(payer.userId);
-      const payerTarget = payerUser ? buildPayerTarget(payerUser) : payer.userName;
+      const payerName = getPayeeDisplayName(payerUser, payer.userName);
+      const paymentHandle = formatPaymentHandleForShare(payerUser?.paymentHandle);
       const amountPerParticipant = participantCount > 0 ? payer.paid / participantCount : 0;
 
-      return `Cada integrante tiene que pagar $${formatPerParticipantAmount(amountPerParticipant)} A ${payerTarget}`;
+      return `pagar a ${payerName}: $${formatTotalAmount(amountPerParticipant)}${paymentHandle ? ` ${paymentHandle}` : ''}`;
     });
 
-  const transferLines = !summary.isUniformSplit
-    ? (
-      summary.transfers.length === 0
-        ? ['- No hay transferencias pendientes.']
-        : summary.transfers.map(transfer => {
-          const payerUser = payerUsers.get(transfer.toUserId);
-          const payerTarget = buildPayerTargetByValues(
-            payerUser?.alias?.trim() || payerUser?.name || transfer.toUserName,
-            payerUser?.paymentHandle?.trim(),
-          );
-
-          return `- ${transfer.fromUserName} paga $${formatPerParticipantAmount(transfer.amount)} a ${payerTarget}`;
-        })
-    )
-    : [];
-
   return [
+    groupName,
+    '',
     `Total gastado: $${formatTotalAmount(summary.totalAmount)}.`,
     ...payerLines,
     '',
     `PARTICIPANTES: (${participantCount})`,
-    summary.isUniformSplit
-      ? `División total c/u: $${formatPerParticipantAmount(divisionPerParticipant)}`
-      : 'División variable según los gastos en los que participó cada integrante.',
-    ...(summary.isUniformSplit ? distributionLines : []),
-    ...transferLines,
-  ];
-}
-
-function buildGroupAmountsMessage(groupName: string, expenses: ExpenseView[], users: UserView[]) {
-  const footerLines = [
-    '****',
-    'Este mensaje fue creado por la aplicación Cuentas Claras.',
-    APP_SHARE_LINK,
-    'Muchas gracias por usar la aplicación.',
-  ];
-  const baseLines = buildSettlementBaseLines(expenses, users);
-
-  return [
-    groupName,
-    '',
-    ...baseLines,
+    `División de los gastos por cada integrante es de: $${formatTotalAmount(divisionPerParticipant)}`,
+    ...divisionLines,
     '',
     ...footerLines,
-  ].join('\n');
-}
-
-function buildShortGroupMessage(groupName: string, users: UserView[], transfers: SettlementTransfer[]) {
-  const usersById = new Map(users.map(user => [user._id.toString(), user]));
-
-  if (transfers.length === 0) {
-    return [
-      groupName,
-      '',
-      'No hay transferencias pendientes.',
-    ].join('\n');
-  }
-
-  return [
-    groupName,
-    '',
-    ...transfers.map(transfer => {
-      const creditor = usersById.get(transfer.toUserId);
-      const creditorName = getPayeeDisplayName(creditor, transfer.toUserName);
-
-      return `- ${transfer.fromUserName} paga $${transfer.amount.toFixed(2)} a ${creditorName}`;
-    }),
   ].join('\n');
 }
 
@@ -243,22 +186,13 @@ export default function HomeScreen({ navigation, route }: any) {
     [balances],
   );
 
-  const handleShareSettlement = async (variant: SettlementMessageVariant) => {
+  const handleShareSettlement = async () => {
     if (expenses.length === 0) {
       Alert.alert('Sin datos', 'Agregá al menos un gasto antes de compartir la liquidación.');
       return;
     }
 
-    const messageTitleByVariant: Record<SettlementMessageVariant, string> = {
-      full: 'Monto por integrante',
-      'transfers-only': 'Liquidación sugerida',
-      short: 'Mensaje corto',
-    };
-    const message = variant === 'full'
-      ? buildGroupAmountsMessage(groupName, expenses, users)
-      : variant === 'short'
-        ? buildShortGroupMessage(groupName, users, transfers)
-      : `${groupName}\n\n${formatSettlementMessage({ balances, transfers }, variant)}`;
+    const message = buildGroupAmountsMessage(groupName, expenses, users);
     const groupWhatsappLink = groupDetails?.whatsappGroupLink?.trim();
 
     if (groupWhatsappLink) {
@@ -298,7 +232,7 @@ export default function HomeScreen({ navigation, route }: any) {
         return;
       }
 
-      await Share.share({ message, title: messageTitleByVariant[variant] });
+      await Share.share({ message, title: 'División de los gastos' });
     } catch {
       Alert.alert('Error', 'No se pudo compartir la liquidación.');
     }
@@ -476,10 +410,8 @@ export default function HomeScreen({ navigation, route }: any) {
 
           <View style={styles.actionsCard}>
             <Text style={styles.sectionHeading}>Compartir</Text>
-            <Text style={styles.shareHint}>Elegí el formato que querés mandar por WhatsApp o por el share del sistema.</Text>
-            <CustomButton title="Compartir monto por integrante" onPress={() => handleShareSettlement('full')} color="#198754" />
-            <CustomButton title="Compartir sólo transferencias" onPress={() => handleShareSettlement('transfers-only')} color="#0f766e" />
-            <CustomButton title="Compartir mensaje corto" onPress={() => handleShareSettlement('short')} color="#2563eb" />
+            <Text style={styles.shareHint}>Mandá un único mensaje corto con la división de los gastos.</Text>
+            <CustomButton title="Compartir mensaje de la división de los gastos" onPress={handleShareSettlement} color="#2563eb" />
           </View>
 
           <View style={styles.summaryCard}>
