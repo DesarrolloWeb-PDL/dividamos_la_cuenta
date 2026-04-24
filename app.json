@@ -9,7 +9,7 @@
     "web": {
       "output": "single",
       "name": "Dividamos la Cuenta",
-      "shortName": "Dividamos",
+      "shortName": "Dividamos la Cuenta",
       "lang": "es",
       "scope": "/",
       "themeColor": "#0f172a",
@@ -18,7 +18,12 @@
       "startUrl": "/",
       "orientation": "portrait",
       "backgroundColor": "#f3f5f8",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "splash": {
+        "image": "./assets/web-splash.png",
+        "resizeMode": "cover",
+        "backgroundColor": "#0b4f6c"
+      }
     },
     "plugins": [
       [
