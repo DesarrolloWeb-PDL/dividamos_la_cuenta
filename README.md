@@ -1,4 +1,4 @@
-# Cuentas Claras
+# Dividamos la Cuenta
 
 App Expo React Native para dividir cuentas por grupo.
 
@@ -64,10 +64,10 @@ Este proyecto puede publicarse como versión web estática de Expo.
 
 La URL pública que usa la app para compartir mensajes vive en [services/appConfig.ts](services/appConfig.ts). Si definís `EXPO_PUBLIC_APP_PUBLIC_URL`, la app usa ese valor; si no, cae en el dominio actual por defecto.
 
-Ejemplo para cuando tengas el dominio nuevo en Vercel:
+Ejemplo para correrla apuntando al dominio público actual:
 
 ```bash
-EXPO_PUBLIC_APP_PUBLIC_URL=https://cuentas-claras.vercel.app npm run web
+EXPO_PUBLIC_APP_PUBLIC_URL=https://dividamos-la-cuenta.vercel.app/ npm run web
 ```
 
 - Desarrollo web local: `npm run web`
@@ -103,7 +103,7 @@ La versión web se puede usar como PWA en el celular, o sea, agregarla a la pant
 6. Publicá en HTTPS.
 7. Abrí esa URL desde el celular y usá la opción de instalar desde el navegador.
 
-Al instalarla, la app se abre en modo standalone, usa icono propio y queda accesible desde el inicio del teléfono.
+Al instalarla, la app se abre en modo standalone, usa el icono propio de Dividamos la Cuenta y queda accesible desde el inicio del teléfono.
 
 ### Qué ya quedó preparado
 

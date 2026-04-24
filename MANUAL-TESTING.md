@@ -101,41 +101,31 @@ Usá este caso para validar línea por línea el mensaje grupal y el individual.
    - Dani: puso $50000.00 en total
 
    PARTICIPANTES: (20)
-   División total c/u: $25.000,00
-   Cada integrante tiene que pagar $22.500,00 A Beto: beto.mp
-   Cada integrante tiene que pagar $2.500,00 A Dani: dani.mp
+   División de los gastos por cada integrante es de: $25.000,00
+   pagar a Beto: $22.500,00 Alias: beto.mp
+   pagar a Dani: $2.500,00 Alias: dani.mp
 
-   ****
-   Este mensaje fue creado por la aplicación Cuentas Claras.
+   **
+   Este mensaje fue creado por Dividamos la Cuenta.
    https://dividamos-la-cuenta.vercel.app/
    Muchas gracias por usar la aplicación.
    ```
 
 8. Tocá el botón `WhatsApp` sobre una transferencia de `Daniel`.
-   Resultado esperado: se abre el chat de Daniel con el mismo bloque de resumen grupal, sin saludo inicial y con cierre `**`.
+   Resultado esperado: se abre el chat de Daniel con el mensaje corto del grupo, sin saludo inicial y con cierre `**`.
 9. Verificá que el mensaje individual se vea así:
 
    ```text
    LOS CAPA PRETA
-   Total gastado: $500000.00.
-   - Beto: puso $450000.00 en total
-   - Dani: puso $50000.00 en total
-
-   PARTICIPANTES: (20)
-   División total c/u: $25.000,00
-   Cada integrante tiene que pagar $22.500,00 A Beto: beto.mp
-   Cada integrante tiene que pagar $2.500,00 A Dani: dani.mp
-
-   **
-   Este mensaje fue creado por la aplicación Cuentas Claras.
-   https://dividamos-la-cuenta.vercel.app/
-   Muchas gracias por usar la aplicación.
+   
+   Te toca pagar $22.500,00 a Beto.
+   beto.mp
    ```
 
 10. Si repetís la prueba con gastos donde no participan los mismos integrantes, revisá que el grupal NO muestre `División total c/u`.
-   Resultado esperado: el mensaje muestra `División variable según los gastos en los que participó cada integrante.` y luego sólo líneas cortas de pago, sin `Detalle por participante:` ni consumo por integrante.
+   Resultado esperado: el mensaje mantiene `División de los gastos por cada integrante es de:` y resume una línea por pagador con el monto correspondiente y su alias/link si está cargado.
 11. En ese mismo escenario de división variable, tocá el botón `WhatsApp` de una transferencia individual.
-   Resultado esperado: el mensaje individual NO copia `Detalle por participante:`; sólo muestra el grupo, el total gastado y cuánto tiene que pagar a quién con alias/link si está cargado.
+   Resultado esperado: el mensaje individual NO copia el resumen grupal; sólo muestra el grupo, cuánto tiene que pagar y el alias/link si está cargado.
 
 ## Casos de borde
 
@@ -162,7 +152,7 @@ Usá este caso para validar línea por línea el mensaje grupal y el individual.
 11. Abrí la versión web publicada desde el navegador del celular y revisá la tarjeta `Instalar app`.
    Resultado esperado: si Chrome dispara el prompt, aparece el botón para instalar; si no, se muestran instrucciones manuales.
 12. Verificá el acceso directo instalado en la pantalla de inicio del celular.
-   Resultado esperado: el icono usa la identidad visual de Cuentas Claras y no un favicon genérico del navegador.
+   Resultado esperado: el icono usa la identidad visual de Dividamos la Cuenta, con calculadora y corazón, y no un favicon genérico del navegador.
 13. Abrí la app instalada y volvé a cerrarla desde multitarea.
    Resultado esperado: al reabrirla sigue entrando sin barra visible de navegador o con mínima UI según soporte del sistema.
 
@@ -174,7 +164,7 @@ Usá este caso para validar línea por línea el mensaje grupal y el individual.
 4. Que los montos se vean con dos decimales en resumen y liquidación.
 5. Que alias y nombres no queden truncados de forma confusa.
 6. Que compartir no se rompa si el grupo todavía no tiene gastos.
-7. Que las tres variantes de share muestren el contenido esperado para el mismo grupo.
+7. Que el único botón de compartir genere el mensaje corto esperado para el mismo grupo.
 
 ## Nota sobre datos previos
 
