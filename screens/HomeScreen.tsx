@@ -45,7 +45,10 @@ function normalizeWhatsappPhone(phone?: string) {
 }
 
 function formatTotalAmount(amount: number) {
-  return amount.toFixed(2);
+  return amount.toLocaleString('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function getPayeeDisplayName(user?: UserView, fallbackName?: string) {
@@ -134,7 +137,7 @@ function buildIndividualSettlementMessage(transfer: SettlementTransfer, groupNam
   return [
     groupName,
     '',
-    `Te toca pagar $${transfer.amount.toFixed(2)} a ${creditorName}.`,
+    `Te toca pagar $${formatTotalAmount(transfer.amount)} a ${creditorName}.`,
     paymentHandle,
   ].filter(Boolean).join('\n');
 }
@@ -268,7 +271,7 @@ export default function HomeScreen({ navigation, route }: any) {
   const handleDeleteExpense = async (expense: ExpenseView) => {
     const shouldDelete = await confirmAction({
       title: 'Eliminar gasto',
-      message: `Se va a borrar ${expense.description} por $${expense.amount.toFixed(2)}.`,
+      message: `Se va a borrar ${expense.description} por $${formatTotalAmount(expense.amount)}.`,
       confirmText: 'Eliminar',
       cancelText: 'Cancelar',
       destructive: true,
@@ -324,14 +327,14 @@ export default function HomeScreen({ navigation, route }: any) {
     const breakdown = calculateExpenseBreakdown(item, users);
     const paymentLabel = breakdown.paymentSummary.length === 0
       ? 'Sin pagos cargados'
-      : breakdown.paymentSummary.map(payment => `${payment.userName} $${payment.amount.toFixed(2)}`).join(' · ');
+      : breakdown.paymentSummary.map(payment => `${payment.userName} $${formatTotalAmount(payment.amount)}`).join(' · ');
 
     return (
       <View style={styles.expenseCard}>
         <View style={styles.expenseHeader}>
           <View style={styles.expenseTitleBlock}>
             <Text style={styles.expenseTitle}>{item.description}</Text>
-            <Text style={styles.expenseAmount}>${item.amount.toFixed(2)}</Text>
+            <Text style={styles.expenseAmount}>${formatTotalAmount(item.amount)}</Text>
           </View>
           <View style={styles.payerBadge}>
             <Text style={styles.payerBadgeText}>Pagaron {paymentLabel}</Text>
@@ -347,7 +350,7 @@ export default function HomeScreen({ navigation, route }: any) {
           {breakdown.shares.map(share => (
             <View key={`${item._id.toString()}-${share.userId}`} style={styles.breakdownRow}>
               <Text style={styles.breakdownName}>{share.userName}</Text>
-              <Text style={styles.breakdownValue}>${share.share.toFixed(2)}</Text>
+              <Text style={styles.breakdownValue}>${formatTotalAmount(share.share)}</Text>
             </View>
           ))}
         </View>
@@ -398,7 +401,7 @@ export default function HomeScreen({ navigation, route }: any) {
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Total</Text>
-              <Text style={styles.statValue}>${totalAmount.toFixed(2)}</Text>
+              <Text style={styles.statValue}>${formatTotalAmount(totalAmount)}</Text>
             </View>
           </View>
 
@@ -423,7 +426,7 @@ export default function HomeScreen({ navigation, route }: any) {
                 <View key={balance.userId} style={styles.summaryRow}>
                   <Text style={styles.summaryName}>{balance.userName}</Text>
                   <Text style={[styles.summaryAmount, balance.balance > 0 ? styles.amountPositive : styles.amountNegative]}>
-                    {balance.balance > 0 ? '+' : '-'}${Math.abs(balance.balance).toFixed(2)}
+                    {balance.balance > 0 ? '+' : '-'}${formatTotalAmount(Math.abs(balance.balance))}
                   </Text>
                 </View>
               ))
@@ -442,7 +445,7 @@ export default function HomeScreen({ navigation, route }: any) {
                   <View style={styles.transferBottomRow}>
                     <View style={styles.transferAmountBlock}>
                       <Text style={styles.transferText}>{transfer.toUserName}</Text>
-                      <Text style={styles.transferAmount}>${transfer.amount.toFixed(2)}</Text>
+                      <Text style={styles.transferAmount}>${formatTotalAmount(transfer.amount)}</Text>
                     </View>
                     <Pressable
                       onPress={() => handleNotifyTransferByWhatsapp(transfer)}
