@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "DIVIDAMOS LA CUENTA",
+    "name": "Dividamos la Cuenta",
     "slug": "dividamos-cta",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,12 +8,12 @@
     "newArchEnabled": true,
     "web": {
       "output": "single",
-      "name": "DIVIDAMOS LA CUENTA",
-      "shortName": "DIVIDAMOS",
+      "name": "Dividamos la Cuenta",
+      "shortName": "Dividamos",
       "lang": "es",
       "scope": "/",
       "themeColor": "#0f172a",
-      "description": "DIVIDAMOS LA CUENTA organiza gastos compartidos. Cuentas claras conservan la amistad.",
+      "description": "Dividamos la Cuenta organiza gastos compartidos con una calculadora clara para cada grupo.",
       "display": "standalone",
       "startUrl": "/",
       "orientation": "portrait",
@@ -24,7 +24,7 @@
       [
         "expo-contacts",
         {
-          "contactsPermission": "Permití que DIVIDAMOS LA CUENTA acceda a tus contactos para sumar integrantes más rápido."
+          "contactsPermission": "Permití que Dividamos la Cuenta acceda a tus contactos para sumar integrantes más rápido."
         }
       ]
     ]

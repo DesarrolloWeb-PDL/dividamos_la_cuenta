@@ -5,7 +5,7 @@ import { confirmAction } from '../services/dialogService';
 import { deleteExpense, deleteExpensesByGroup, getExpensesByGroup } from '../services/expenseService';
 import { getUsersByGroup } from '../services/userService';
 import { getGroupById } from '../services/groupService';
-import { APP_PUBLIC_URL } from '../services/appConfig';
+import { APP_DISPLAY_NAME, APP_PUBLIC_URL } from '../services/appConfig';
 import { calculateDetailedSettlement, calculateExpenseBreakdown, calculateSettlement, SettlementTransfer, UserBalance } from '../services/settlementService';
 import { detectPaymentHandleKind, getPaymentHandleLabel } from '../services/paymentHandle';
 import CustomButton from '../components/CustomButton';
@@ -81,7 +81,7 @@ function buildGroupAmountsMessage(groupName: string, expenses: ExpenseView[], us
   const summary = calculateDetailedSettlement(expenses, users);
   const footerLines = [
     '**',
-    'Este mensaje fue creado por la aplicación Cuentas Claras.',
+    `Este mensaje fue creado por ${APP_DISPLAY_NAME}.`,
     APP_SHARE_LINK,
     'Muchas gracias por usar la aplicación.',
   ];

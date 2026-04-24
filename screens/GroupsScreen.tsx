@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import CustomButton from '../components/CustomButton';
-import { APP_DISPLAY_NAME, APP_TAGLINE } from '../services/appConfig';
+import { APP_DISPLAY_NAME, APP_HERO_GREETING, APP_TAGLINE } from '../services/appConfig';
 import { confirmAction } from '../services/dialogService';
 import { deleteExpensesByGroup, getAllExpenses } from '../services/expenseService';
 import { deleteGroup, getAllGroups } from '../services/groupService';
@@ -166,7 +167,15 @@ export default function GroupsScreen({ navigation }: any) {
                 <Text style={styles.themeToggleIcon}>{mode === 'dark' ? '☀' : '☾'}</Text>
               </Pressable>
             </View>
-            <Text style={styles.title}>{APP_DISPLAY_NAME}</Text>
+            <View style={styles.heroIconRow}>
+              <View style={styles.heroIconBadge}>
+                <MaterialCommunityIcons name="calculator-variant-outline" size={22} color={colors.textOnHero} />
+              </View>
+              <View style={styles.heroIconBadge}>
+                <MaterialCommunityIcons name="account-heart-outline" size={22} color={colors.textOnHero} />
+              </View>
+            </View>
+            <Text style={styles.title}>{APP_HERO_GREETING}</Text>
             <Text style={styles.tagline}>{APP_TAGLINE}</Text>
             <Text style={styles.subtitle}>
               Organizá grupos, cargá gastos compartidos y resolvé cuánto tiene que pagar cada integrante sin mensajes eternos ni cuentas confusas.
@@ -241,6 +250,17 @@ const createStyles = (colors: AppPalette) => StyleSheet.create({
     backgroundColor: 'transparent',
   },
   themeToggleIcon: { color: colors.textOnHero, fontWeight: '700', fontSize: 18 },
+  heroIconRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  heroIconBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(248, 250, 252, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(248, 250, 252, 0.2)',
+  },
   title: { fontSize: 28, fontWeight: '700', color: colors.textOnHero, marginBottom: 6 },
   subtitle: { fontSize: 15, lineHeight: 22, color: colors.heroMuted },
   tagline: {

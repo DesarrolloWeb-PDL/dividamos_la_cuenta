@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "DIVIDAMOS LA CUENTA",
-  "short_name": "DIVIDAMOS",
-  "description": "DIVIDAMOS LA CUENTA organiza gastos compartidos. Cuentas claras conservan la amistad.",
+  "name": "Dividamos la Cuenta",
+  "short_name": "Dividamos",
+  "description": "Dividamos la Cuenta organiza gastos compartidos con una calculadora clara para cada grupo.",
   "lang": "es",
   "dir": "ltr",
   "start_url": "/",
