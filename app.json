@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Dividamos la Cuenta",
+    "slug": "dividamos-cta",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "web": {
+      "output": "single",
+      "name": "Dividamos la Cuenta",
+      "shortName": "Dividamos la Cuenta",
+      "lang": "es",
+      "scope": "/",
+      "themeColor": "#0f172a",
+      "description": "Dividamos la Cuenta organiza gastos compartidos con una calculadora clara para cada grupo.",
+      "display": "standalone",
+      "startUrl": "/",
+      "orientation": "portrait",
+      "backgroundColor": "#f3f5f8",
+      "favicon": "./assets/favicon.png",
+      "splash": {
+        "image": "./assets/web-splash.svg",
+        "resizeMode": "cover",
+        "backgroundColor": "#0b4f6c"
+      }
+    },
+    "plugins": [
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Permití que Dividamos la Cuenta acceda a tus contactos para sumar integrantes más rápido."
+        }
+      ]
+    ]
+  }
+}

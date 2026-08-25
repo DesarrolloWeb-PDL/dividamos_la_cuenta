@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1179 2556" role="img" aria-label="Cuentas Claras">
+  <defs>
+    <linearGradient id="phoneGradient" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#2797c6"/>
+      <stop offset="100%" stop-color="#176282"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#08263a" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <rect width="1179" height="2556" fill="#145a78"/>
+  <g transform="translate(146 334)">
+    <rect x="0" y="0" width="888" height="1484" rx="105" fill="url(#phoneGradient)" stroke="#59b9df" stroke-width="6" filter="url(#softShadow)"/>
+    <rect x="158" y="232" width="582" height="759" rx="46" fill="#eef7fb" stroke="#156b8b" stroke-width="8"/>
+    <rect x="202" y="292" width="495" height="126" rx="26" fill="#d6eef8"/>
+    <text x="242" y="377" fill="#0d775d" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="700">$</text>
+    <text x="316" y="369" fill="#0c2d52" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700">123,45</text>
+    <rect x="555" y="292" width="120" height="126" rx="24" fill="#f4f7fb"/>
+    <text x="594" y="372" fill="#155a78" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700">÷</text>
+
+    <g fill="#29b7c3">
+      <rect x="228" y="482" width="110" height="102" rx="18"/>
+      <rect x="371" y="482" width="110" height="102" rx="18"/>
+      <rect x="514" y="482" width="110" height="102" rx="18"/>
+      <rect x="228" y="636" width="396" height="104" rx="18"/>
+      <rect x="228" y="790" width="396" height="104" rx="18"/>
+    </g>
+
+    <g transform="translate(256 486)">
+      <circle cx="90" cy="128" r="66" fill="#f5c090"/>
+      <path d="M34 104c0-46 34-82 76-82 36 0 68 26 78 62v18H34z" fill="#255987"/>
+      <path d="M36 212c38 28 104 28 142 0" fill="none" stroke="#4b2d24" stroke-width="7" stroke-linecap="round"/>
+      <path d="M16 246c0-55 44-99 99-99h44c55 0 99 44 99 99v119H16z" fill="#82bae6"/>
+      <path d="M70 118c0-12 9-21 21-21h53c12 0 21 9 21 21" fill="none" stroke="#eef7fb" stroke-width="6" stroke-linecap="round"/>
+      <path d="M74 314c20 16 62 16 82 0" fill="none" stroke="#3e2e37" stroke-width="7" stroke-linecap="round"/>
+    </g>
+
+    <g transform="translate(426 522)">
+      <circle cx="132" cy="130" r="70" fill="#c47c51"/>
+      <path d="M56 106c8-38 44-64 88-64 42 0 78 26 88 64v24H56z" fill="#285767"/>
+      <path d="M92 212c18 14 54 14 72 0" fill="none" stroke="#4b2d24" stroke-width="7" stroke-linecap="round"/>
+      <path d="M20 280c0-62 50-112 112-112h62c62 0 112 50 112 112v158H20z" fill="#f8a044"/>
+      <path d="M0 344c0-94 76-170 170-170 62 0 118 33 148 87" fill="none" stroke="#f8a044" stroke-width="24" stroke-linecap="round"/>
+      <path d="M18 198c112 0 174 4 260 54" fill="none" stroke="#82bae6" stroke-width="24" stroke-linecap="round"/>
+    </g>
+
+    <rect x="228" y="958" width="282" height="102" rx="18" fill="#ffd36c"/>
+    <text x="344" y="1025" fill="#8b6504" font-family="Arial, Helvetica, sans-serif" font-size="64" font-weight="700">=</text>
+
+    <g transform="translate(62 1110) rotate(14 108 108)">
+      <rect width="216" height="216" fill="#85d178"/>
+      <text x="84" y="134" fill="#227f58" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="700">$</text>
+    </g>
+
+    <g transform="translate(570 1146) rotate(-14 108 108)">
+      <rect width="216" height="216" fill="#79c3ed"/>
+      <text x="92" y="138" fill="#0d5a8c" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="700">€</text>
+    </g>
+
+    <ellipse cx="444" cy="1448" rx="308" ry="64" fill="#0b3e56" opacity="0.8"/>
+  </g>
+
+  <text x="589.5" y="2008" text-anchor="middle" fill="#eaf7ff" font-family="Arial, Helvetica, sans-serif" font-size="70" font-weight="700">Hola,</text>
+  <text x="589.5" y="2108" text-anchor="middle" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="800">Cuentas Claras</text>
+  <text x="589.5" y="2228" text-anchor="middle" fill="#eaf7ff" font-family="Arial, Helvetica, sans-serif" font-size="60" font-weight="700">Conservan la amistad</text>
+  <text x="589.5" y="2310" text-anchor="middle" fill="#eaf7ff" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="600">Calculá, compartí y cerrá</text>
+  <text x="589.5" y="2378" text-anchor="middle" fill="#eaf7ff" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="600">cuentas sin vueltas.</text>
+</svg>
