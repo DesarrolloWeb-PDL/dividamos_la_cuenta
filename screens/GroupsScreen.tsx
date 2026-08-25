@@ -111,120 +111,123 @@ export default function GroupsScreen({ navigation }: any) {
   }, []);
 
   return (
-    <FlatList
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      data={groups}
-      keyExtractor={item => item._id.toString()}
-      renderItem={({ item }) => {
-        const groupId = item._id.toString();
+    <View style={styles.screen}>
+      <FlatList
+        style={styles.flatList}
+        contentContainerStyle={styles.content}
+        data={groups}
+        keyExtractor={item => item._id.toString()}
+        renderItem={({ item }) => {
+          const groupId = item._id.toString();
 
-        return (
-          <View style={styles.groupCard}>
-            <Text style={styles.groupTitle}>{item.name}</Text>
-            <Text style={styles.groupDescription}>
-              {item.description.trim() || 'Grupo listo para dividir cuentas y llevar saldos propios.'}
-            </Text>
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Integrantes</Text>
-                <Text style={styles.statValue}>{memberCountByGroup[groupId] ?? 0}</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Gastos</Text>
-                <Text style={styles.statValue}>{expenseCountByGroup[groupId] ?? 0}</Text>
-              </View>
-            </View>
-            <CustomButton
-              title="Abrir grupo"
-              onPress={() => navigation.navigate('GroupHome', { groupId, groupName: item.name })}
-              color="#0f766e"
-            />
-            <View style={styles.inlineActions}>
-              <Pressable
-                onPress={() => navigation.navigate('AddGroup', { group: item })}
-                style={[styles.inlineActionButton, styles.inlineActionPrimary]}
-              >
-                <Text style={styles.inlineActionPrimaryText}>Editar</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => handleDeleteGroup(item)}
-                style={[styles.inlineActionButton, styles.inlineActionDanger]}
-              >
-                <Text style={styles.inlineActionDangerText}>Eliminar</Text>
-              </Pressable>
-            </View>
-          </View>
-        );
-      }}
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
-      ListHeaderComponent={(
-        <View style={styles.headerStack}>
-          <View style={styles.heroCard}>
-            <View style={styles.heroTopRow}>
-              <Text style={styles.eyebrow}>Aplicación para dividir gastos</Text>
-              <Pressable onPress={cycleMode} style={styles.themeToggle}>
-                <Text style={styles.themeToggleIcon}>{mode === 'dark' ? '☀' : '☾'}</Text>
-              </Pressable>
-            </View>
-            <View style={styles.heroIconRow}>
-              <View style={styles.heroIconBadge}>
-                <MaterialCommunityIcons name="calculator-variant-outline" size={22} color={colors.textOnHero} />
-              </View>
-              <View style={styles.heroIconBadge}>
-                <MaterialCommunityIcons name="account-heart-outline" size={22} color={colors.textOnHero} />
-              </View>
-            </View>
-            <Text style={styles.title}>{APP_HERO_GREETING}</Text>
-            <Text style={styles.tagline}>{APP_TAGLINE}</Text>
-            <Text style={styles.subtitle}>
-              Organizá grupos, cargá gastos compartidos y resolvé cuánto tiene que pagar cada integrante sin mensajes eternos ni cuentas confusas.
-            </Text>
-          </View>
-          <View style={styles.actionsCard}>
-            <Text style={styles.sectionHeading}>Pantalla principal</Text>
-            <Text style={styles.introText}>
-              Cada grupo conserva su propia liquidación, sus integrantes y sus gastos para que puedas ordenar viajes, salidas o compras comunes en pocos pasos.
-            </Text>
-            <CustomButton title="Crear nuevo grupo" onPress={() => navigation.navigate('AddGroup')} />
-          </View>
-          {pwaInstallState.supported && !pwaInstallState.installed ? (
-            <View style={styles.installCard}>
-              <Text style={styles.sectionHeading}>Instalar app</Text>
-              <Text style={styles.installText}>
-                {pwaInstallState.canInstall
-                  ? 'Si la abriste desde el celular, ya podés instalarla y usarla como acceso directo.'
-                  : pwaInstallState.instructions}
+          return (
+            <View style={styles.groupCard}>
+              <Text style={styles.groupTitle}>{item.name}</Text>
+              <Text style={styles.groupDescription}>
+                {item.description.trim() || 'Grupo listo para dividir cuentas y llevar saldos propios.'}
               </Text>
+              <View style={styles.statsRow}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>Integrantes</Text>
+                  <Text style={styles.statValue}>{memberCountByGroup[groupId] ?? 0}</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>Gastos</Text>
+                  <Text style={styles.statValue}>{expenseCountByGroup[groupId] ?? 0}</Text>
+                </View>
+              </View>
               <CustomButton
-                title={pwaInstallState.canInstall ? 'Instalar en este dispositivo' : 'Ver cómo instalarla'}
-                onPress={handleInstallApp}
+                title="Abrir grupo"
+                onPress={() => navigation.navigate('GroupHome', { groupId, groupName: item.name })}
                 color="#0f766e"
               />
+              <View style={styles.inlineActions}>
+                <Pressable
+                  onPress={() => navigation.navigate('AddGroup', { group: item })}
+                  style={[styles.inlineActionButton, styles.inlineActionPrimary]}
+                >
+                  <Text style={styles.inlineActionPrimaryText}>Editar</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleDeleteGroup(item)}
+                  style={[styles.inlineActionButton, styles.inlineActionDanger]}
+                >
+                  <Text style={styles.inlineActionDangerText}>Eliminar</Text>
+                </Pressable>
+              </View>
             </View>
-          ) : null}
-          <View style={styles.footer}>
-            <Pressable onPress={() => Linking.openURL('https://danielperego.vercel.app/')}>
-              <Text style={styles.footerText}>© 2026 Carlos Daniel Pérego - DesarrolloWeb-pdl</Text>
-            </Pressable>
+          );
+        }}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListHeaderComponent={(
+          <View style={styles.headerStack}>
+            <View style={styles.heroCard}>
+              <View style={styles.heroTopRow}>
+                <Text style={styles.eyebrow}>Aplicación para dividir gastos</Text>
+                <Pressable onPress={cycleMode} style={styles.themeToggle}>
+                  <Text style={styles.themeToggleIcon}>{mode === 'dark' ? '☀' : '☾'}</Text>
+                </Pressable>
+              </View>
+              <View style={styles.heroIconRow}>
+                <View style={styles.heroIconBadge}>
+                  <MaterialCommunityIcons name="calculator-variant-outline" size={22} color={colors.textOnHero} />
+                </View>
+                <View style={styles.heroIconBadge}>
+                  <MaterialCommunityIcons name="account-heart-outline" size={22} color={colors.textOnHero} />
+                </View>
+              </View>
+              <Text style={styles.title}>{APP_HERO_GREETING}</Text>
+              <Text style={styles.tagline}>{APP_TAGLINE}</Text>
+              <Text style={styles.subtitle}>
+                Organizá grupos, cargá gastos compartidos y resolvé cuánto tiene que pagar cada integrante sin mensajes eternos ni cuentas confusas.
+              </Text>
+            </View>
+            <View style={styles.actionsCard}>
+              <Text style={styles.sectionHeading}>Pantalla principal</Text>
+              <Text style={styles.introText}>
+                Cada grupo conserva su propia liquidación, sus integrantes y sus gastos para que puedas ordenar viajes, salidas o compras comunes en pocos pasos.
+              </Text>
+              <CustomButton title="Crear nuevo grupo" onPress={() => navigation.navigate('AddGroup')} />
+            </View>
+            {pwaInstallState.supported && !pwaInstallState.installed ? (
+              <View style={styles.installCard}>
+                <Text style={styles.sectionHeading}>Instalar app</Text>
+                <Text style={styles.installText}>
+                  {pwaInstallState.canInstall
+                    ? 'Si la abriste desde el celular, ya podés instalarla y usarla como acceso directo.'
+                    : pwaInstallState.instructions}
+                </Text>
+                <CustomButton
+                  title={pwaInstallState.canInstall ? 'Instalar en este dispositivo' : 'Ver cómo instalarla'}
+                  onPress={handleInstallApp}
+                  color="#0f766e"
+                />
+              </View>
+            ) : null}
           </View>
-        </View>
-      )}
-      ListEmptyComponent={(
-        <View style={styles.emptyStateCard}>
-          <Text style={styles.emptyStateTitle}>Todavía no hay grupos</Text>
-          <Text style={styles.emptyStateText}>
-            Creá un grupo para separar cuentas de salidas, viajes o cualquier plan compartido.
-          </Text>
-        </View>
-      )}
-    />
+        )}
+        ListEmptyComponent={(
+          <View style={styles.emptyStateCard}>
+            <Text style={styles.emptyStateTitle}>Todavía no hay grupos</Text>
+            <Text style={styles.emptyStateText}>
+              Creá un grupo para separar cuentas de salidas, viajes o cualquier plan compartido.
+            </Text>
+          </View>
+        )}
+      />
+      <View style={styles.footer}>
+        <Pressable onPress={() => Linking.openURL('https://danielperego.vercel.app/')}>
+          <Text style={styles.footerText}>© 2026 Carlos Daniel Pérego - DesarrolloWeb-pdl</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
 const createStyles = (colors: AppPalette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16, paddingBottom: 32 },
+  flatList: { flex: 1 },
+  content: { padding: 16, paddingBottom: 16 },
   headerStack: { gap: 12, marginBottom: 16 },
   heroCard: {
     backgroundColor: colors.hero,
@@ -286,8 +289,10 @@ const createStyles = (colors: AppPalette) => StyleSheet.create({
   },
   installText: { color: colors.textMuted, lineHeight: 20 },
   footer: {
-    marginTop: 24,
+    paddingVertical: 16,
     alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   footerText: {
     color: colors.primary,
