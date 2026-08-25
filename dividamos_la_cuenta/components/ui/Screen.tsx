@@ -10,7 +10,7 @@ interface ScreenProps {
 export default function Screen({ children, style }: ScreenProps) {
     return (
         <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+            <StatusBar barStyle="light-content" backgroundColor={colors.background} />
             <View style={[styles.container, style]}>
                 {children}
             </View>

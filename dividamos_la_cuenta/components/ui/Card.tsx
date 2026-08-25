@@ -18,9 +18,11 @@ export default function Card({ children, style }: CardProps) {
 const styles = StyleSheet.create({
     container: {
         backgroundColor: colors.surface,
-        borderRadius: 12,
-        padding: spacing.md,
+        borderRadius: 16,
+        padding: spacing.lg,
         marginBottom: spacing.md,
-        ...shadows.sm,
+        borderWidth: 1,
+        borderColor: colors.border,
+        ...shadows.md,
     },
 });

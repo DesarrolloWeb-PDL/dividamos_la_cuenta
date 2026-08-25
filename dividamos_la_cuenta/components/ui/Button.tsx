@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle } from 'react-native';
 import { colors, spacing, typography } from '../../theme';
 
 interface ButtonProps {
@@ -20,7 +20,7 @@ export default function Button({
     style,
 }: ButtonProps) {
     const getBackgroundColor = () => {
-        if (disabled) return colors.textLight;
+        if (disabled) return colors.border;
         switch (variant) {
             case 'primary':
                 return colors.primary;
@@ -34,8 +34,9 @@ export default function Button({
     };
 
     const getTextColor = () => {
+        if (disabled) return colors.textLight;
         if (variant === 'outline') return colors.primary;
-        return colors.surface;
+        return colors.white;
     };
 
     return (
@@ -48,7 +49,7 @@ export default function Button({
             ]}
             onPress={onPress}
             disabled={disabled || loading}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
         >
             {loading ? (
                 <ActivityIndicator color={getTextColor()} />
@@ -63,7 +64,7 @@ const styles = StyleSheet.create({
     container: {
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
-        borderRadius: 8,
+        borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
         marginVertical: spacing.xs,

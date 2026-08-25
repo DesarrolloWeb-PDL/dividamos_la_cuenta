@@ -1,13 +1,14 @@
 export const colors = {
-    primary: '#4F46E5', // Indigo 600
-    primaryDark: '#4338CA', // Indigo 700
-    secondary: '#10B981', // Emerald 500
-    background: '#F3F4F6', // Gray 100
-    surface: '#FFFFFF',
-    text: '#1F2937', // Gray 800
-    textLight: '#6B7280', // Gray 500
-    error: '#EF4444', // Red 500
-    border: '#E5E7EB', // Gray 200
+    primary: '#e85d04', // Orange accent
+    primaryDark: '#d45203', // Orange hover
+    secondary: '#ff7b1a', // Orange light
+    background: '#0a0a0a', // Dark background
+    surface: '#141414', // Card background
+    text: '#ededed', // Light text
+    textLight: '#a1a1aa', // Muted text
+    error: '#ef4444', // Red error
+    border: '#262626', // Border color
+    white: '#ffffff',
 };
 
 export const spacing = {
@@ -40,7 +41,7 @@ export const typography = {
     button: {
         fontSize: 16,
         fontWeight: '600' as '600',
-        color: colors.surface,
+        color: colors.white,
     },
 };
 
@@ -58,5 +59,12 @@ export const shadows = {
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
         elevation: 5,
+    },
+    lg: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 10,
     },
 };

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import ExpenseInput from '../components/ExpenseInput';
 import { calculateNetPositions, minimizeTransactions } from '../services/settlement';
 import { generateWhatsAppLink, fetchAlias, openWhatsApp } from '../services/whatsappLink';
@@ -58,7 +58,7 @@ export default function GroupDetail({ route }: Props) {
     if (!group) {
         return (
             <Screen style={{ justifyContent: 'center', alignItems: 'center' }}>
-                <Text>Cargando grupo...</Text>
+                <Text style={styles.loadingText}>Cargando grupo...</Text>
             </Screen>
         );
     }
@@ -66,6 +66,7 @@ export default function GroupDetail({ route }: Props) {
     return (
         <Screen>
             <Text style={styles.title}>{group.name}</Text>
+            <Text style={styles.subtitle}>{group.participants.length} participantes</Text>
 
             <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
                 <Card style={{ marginBottom: spacing.lg }}>
@@ -75,7 +76,10 @@ export default function GroupDetail({ route }: Props) {
                 <Text style={styles.sectionTitle}>Liquidación</Text>
 
                 {payments.length === 0 ? (
-                    <Text style={styles.emptyText}>No hay deudas pendientes.</Text>
+                    <View style={styles.emptyState}>
+                        <Text style={styles.emptyIcon}>✨</Text>
+                        <Text style={styles.emptyText}>No hay deudas pendientes</Text>
+                    </View>
                 ) : (
                     payments.map((item, idx) => {
                         const fromName = group.participants.find(p => p.id.toString() === item.from.toString())?.name;
@@ -83,14 +87,17 @@ export default function GroupDetail({ route }: Props) {
 
                         return (
                             <Card key={idx} style={styles.paymentCard}>
-                                <Text style={styles.paymentText}>
-                                    <Text style={{ fontWeight: 'bold' }}>{fromName}</Text> debe pagar <Text style={{ color: colors.error, fontWeight: 'bold' }}>${item.amount.toFixed(2)}</Text> a <Text style={{ fontWeight: 'bold' }}>{toName}</Text>
-                                </Text>
+                                <View style={styles.paymentHeader}>
+                                    <Text style={styles.paymentFrom}>{fromName}</Text>
+                                    <Text style={styles.paymentArrow}>→</Text>
+                                    <Text style={styles.paymentTo}>{toName}</Text>
+                                </View>
+                                <Text style={styles.paymentAmount}>${item.amount.toFixed(2)}</Text>
                                 <Button
                                     title="Cobrar por WhatsApp"
-                                    variant="secondary"
+                                    variant="primary"
                                     onPress={() => handleRequestPayment(item)}
-                                    style={{ marginTop: spacing.sm }}
+                                    style={styles.whatsappButton}
                                 />
                             </Card>
                         );
@@ -104,21 +111,58 @@ export default function GroupDetail({ route }: Props) {
 const styles = StyleSheet.create({
     title: {
         ...typography.h1,
-        color: colors.primary,
-        marginBottom: spacing.md,
+        color: colors.text,
+        marginBottom: spacing.xs,
+    },
+    subtitle: {
+        ...typography.caption,
+        marginBottom: spacing.lg,
     },
     sectionTitle: {
         ...typography.h2,
-        marginBottom: spacing.sm,
-        marginTop: spacing.md,
+        marginBottom: spacing.md,
+    },
+    loadingText: {
+        ...typography.body,
+        color: colors.textLight,
     },
     paymentCard: {
         borderLeftWidth: 4,
-        borderLeftColor: colors.secondary,
+        borderLeftColor: colors.primary,
     },
-    paymentText: {
+    paymentHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    paymentFrom: {
         ...typography.body,
-        marginBottom: spacing.xs,
+        fontWeight: '600',
+    },
+    paymentArrow: {
+        ...typography.body,
+        color: colors.textLight,
+        marginHorizontal: spacing.sm,
+    },
+    paymentTo: {
+        ...typography.body,
+        fontWeight: '600',
+    },
+    paymentAmount: {
+        ...typography.h2,
+        color: colors.primary,
+        marginBottom: spacing.md,
+    },
+    whatsappButton: {
+        backgroundColor: colors.primary,
+    },
+    emptyState: {
+        alignItems: 'center',
+        marginTop: spacing.xl * 2,
+    },
+    emptyIcon: {
+        fontSize: 48,
+        marginBottom: spacing.md,
     },
     emptyText: {
         ...typography.body,

@@ -28,11 +28,14 @@ export default function HomeScreen({ navigation }: Props) {
     return (
         <Screen>
             <View style={styles.header}>
-                <Text style={styles.title}>Mis Grupos</Text>
+                <View>
+                    <Text style={styles.greeting}>Hola! 👋</Text>
+                    <Text style={styles.title}>Mis Grupos</Text>
+                </View>
                 <Button
                     title="+ Nuevo"
                     onPress={() => navigation.navigate('CreateGroup')}
-                    style={{ width: 100 }}
+                    style={styles.newButton}
                 />
             </View>
 
@@ -43,23 +46,26 @@ export default function HomeScreen({ navigation }: Props) {
                 renderItem={({ item }) => (
                     <Card>
                         <View style={styles.cardContent}>
-                            <View>
+                            <View style={styles.cardInfo}>
                                 <Text style={styles.groupName}>{item.name}</Text>
-                                <Text style={styles.groupInfo}>{item.participants.length} participantes</Text>
+                                <Text style={styles.groupInfo}>
+                                    {item.participants.length} participantes
+                                </Text>
                             </View>
                             <Button
                                 title="Ver"
                                 variant="outline"
                                 onPress={() => navigation.navigate('GroupDetail', { groupId: item.id.toString() })}
-                                style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.md }}
+                                style={styles.viewButton}
                             />
                         </View>
                     </Card>
                 )}
                 ListEmptyComponent={
                     <View style={styles.emptyState}>
-                        <Text style={styles.emptyText}>No tienes grupos creados.</Text>
-                        <Text style={styles.emptySubtext}>Crea uno para empezar a dividir gastos.</Text>
+                        <Text style={styles.emptyIcon}>👥</Text>
+                        <Text style={styles.emptyText}>No tienes grupos creados</Text>
+                        <Text style={styles.emptySubtext}>Crea uno para empezar a dividir gastos</Text>
                     </View>
                 }
             />
@@ -72,16 +78,26 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.lg,
+        marginBottom: spacing.xl,
+    },
+    greeting: {
+        ...typography.caption,
+        marginBottom: spacing.xs,
     },
     title: {
         ...typography.h1,
-        color: colors.primary,
+        color: colors.text,
+    },
+    newButton: {
+        width: 100,
     },
     cardContent: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+    },
+    cardInfo: {
+        flex: 1,
     },
     groupName: {
         ...typography.h2,
@@ -90,9 +106,17 @@ const styles = StyleSheet.create({
     groupInfo: {
         ...typography.caption,
     },
+    viewButton: {
+        paddingVertical: spacing.xs,
+        paddingHorizontal: spacing.md,
+    },
     emptyState: {
         alignItems: 'center',
-        marginTop: spacing.xl * 2,
+        marginTop: spacing.xl * 3,
+    },
+    emptyIcon: {
+        fontSize: 48,
+        marginBottom: spacing.md,
     },
     emptyText: {
         ...typography.h2,

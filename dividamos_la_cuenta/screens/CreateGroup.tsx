@@ -74,6 +74,7 @@ export default function CreateGroup({ navigation }: Props) {
     return (
         <Screen>
             <Text style={styles.title}>Nuevo Grupo</Text>
+            <Text style={styles.subtitle}>Creá un grupo para dividir gastos</Text>
 
             <Card>
                 <Input
@@ -85,8 +86,13 @@ export default function CreateGroup({ navigation }: Props) {
             </Card>
 
             <View style={styles.sectionHeader}>
-                <Text style={styles.subtitle}>Participantes ({selected.length})</Text>
-                <Button title="Cargar Contactos" onPress={loadContacts} variant="secondary" style={{ paddingVertical: 4 }} />
+                <Text style={styles.sectionTitle}>Participantes ({selected.length})</Text>
+                <Button 
+                    title="Cargar Contactos" 
+                    onPress={loadContacts} 
+                    variant="secondary" 
+                    style={styles.loadButton} 
+                />
             </View>
 
             <ScrollView style={styles.contactsList}>
@@ -118,8 +124,12 @@ export default function CreateGroup({ navigation }: Props) {
 const styles = StyleSheet.create({
     title: {
         ...typography.h1,
-        color: colors.primary,
-        marginBottom: spacing.md,
+        color: colors.text,
+        marginBottom: spacing.xs,
+    },
+    subtitle: {
+        ...typography.caption,
+        marginBottom: spacing.lg,
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -128,14 +138,18 @@ const styles = StyleSheet.create({
         marginTop: spacing.lg,
         marginBottom: spacing.sm,
     },
-    subtitle: {
+    sectionTitle: {
         ...typography.h2,
+    },
+    loadButton: {
+        paddingVertical: spacing.xs,
+        paddingHorizontal: spacing.md,
     },
     contactsList: {
         flex: 1,
     },
     contactButton: {
-        marginBottom: spacing.xs,
+        marginBottom: spacing.sm,
     },
     footer: {
         paddingTop: spacing.md,

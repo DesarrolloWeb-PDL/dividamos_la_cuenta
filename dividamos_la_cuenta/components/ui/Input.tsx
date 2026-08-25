@@ -32,14 +32,14 @@ const styles = StyleSheet.create({
     label: {
         ...typography.body,
         fontWeight: '600',
-        marginBottom: spacing.xs,
+        marginBottom: spacing.sm,
         color: colors.text,
     },
     input: {
-        backgroundColor: colors.surface,
+        backgroundColor: colors.background,
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
+        borderRadius: 12,
         padding: spacing.md,
         ...typography.body,
         color: colors.text,
