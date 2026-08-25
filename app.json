@@ -12,17 +12,17 @@
       "shortName": "Dividamos la Cuenta",
       "lang": "es",
       "scope": "/",
-      "themeColor": "#0f172a",
+      "themeColor": "#e85d04",
       "description": "Dividamos la Cuenta organiza gastos compartidos con una calculadora clara para cada grupo.",
       "display": "standalone",
       "startUrl": "/",
       "orientation": "portrait",
-      "backgroundColor": "#f3f5f8",
-      "favicon": "./assets/favicon.png",
+      "backgroundColor": "#0a0a0a",
+      "favicon": "./assets/favicon.svg",
       "splash": {
         "image": "./assets/web-splash.svg",
         "resizeMode": "cover",
-        "backgroundColor": "#0b4f6c"
+        "backgroundColor": "#0a0a0a"
       }
     },
     "plugins": [
