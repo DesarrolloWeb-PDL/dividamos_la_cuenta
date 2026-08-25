@@ -188,10 +188,6 @@ export default function GroupsScreen({ navigation }: any) {
             </Text>
             <CustomButton title="Crear nuevo grupo" onPress={() => navigation.navigate('AddGroup')} />
           </View>
-          <View style={styles.signatureCard}>
-            <Text style={styles.signatureLabel}>Última versión</Text>
-            <Text style={styles.signatureText}>Desarrollado por Desarrollo Web - PDL</Text>
-          </View>
           {pwaInstallState.supported && !pwaInstallState.installed ? (
             <View style={styles.installCard}>
               <Text style={styles.sectionHeading}>Instalar app</Text>
@@ -283,22 +279,6 @@ const createStyles = (colors: AppPalette) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.success,
   },
-  signatureCard: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  signatureLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  signatureText: { color: colors.text, fontSize: 15, fontWeight: '600' },
   installText: { color: colors.textMuted, lineHeight: 20 },
   sectionHeading: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },
   separator: { height: 12 },
