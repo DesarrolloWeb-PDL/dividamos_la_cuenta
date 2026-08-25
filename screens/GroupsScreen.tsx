@@ -203,6 +203,9 @@ export default function GroupsScreen({ navigation }: any) {
               />
             </View>
           ) : null}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>© 2026 Carlos Daniel Pérego - DesarrolloWeb-pdl</Text>
+          </View>
         </View>
       )}
       ListEmptyComponent={(
@@ -280,6 +283,14 @@ const createStyles = (colors: AppPalette) => StyleSheet.create({
     borderColor: colors.success,
   },
   installText: { color: colors.textMuted, lineHeight: 20 },
+  footer: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  footerText: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
   sectionHeading: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },
   separator: { height: 12 },
   groupCard: {
