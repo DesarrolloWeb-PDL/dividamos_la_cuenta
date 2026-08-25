@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import CustomButton from '../components/CustomButton';
 import { APP_DISPLAY_NAME, APP_HERO_GREETING, APP_TAGLINE } from '../services/appConfig';
@@ -204,7 +204,9 @@ export default function GroupsScreen({ navigation }: any) {
             </View>
           ) : null}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>© 2026 Carlos Daniel Pérego - DesarrolloWeb-pdl</Text>
+            <Pressable onPress={() => Linking.openURL('https://danielperego.vercel.app/')}>
+              <Text style={styles.footerText}>© 2026 Carlos Daniel Pérego - DesarrolloWeb-pdl</Text>
+            </Pressable>
           </View>
         </View>
       )}
@@ -288,8 +290,9 @@ const createStyles = (colors: AppPalette) => StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    color: colors.textMuted,
+    color: colors.primary,
     fontSize: 12,
+    textDecorationLine: 'underline',
   },
   sectionHeading: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },
   separator: { height: 12 },
