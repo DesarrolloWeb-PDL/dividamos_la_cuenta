@@ -216,8 +216,15 @@ export default function GroupsScreen({ navigation }: any) {
         )}
       />
       <View style={styles.footer}>
-        <Pressable onPress={() => Linking.openURL('https://danielperego.vercel.app/')}>
-          <Text style={styles.footerText}>© 2026 Carlos Daniel Pérego - DesarrolloWeb-pdl</Text>
+        <Text style={styles.footerCopyright}>© 2026 Dividamos la Cuenta. Todos os direitos reservados.</Text>
+        <Pressable onPress={() => Linking.openURL('https://desarrolloweb-pdl.vercel.app/')} style={styles.footerBrand}>
+          <View style={styles.pdlLogo}>
+            <View style={[styles.pdlRect, { opacity: 1 }]} />
+            <View style={[styles.pdlRect, { opacity: 0.7 }]} />
+            <View style={[styles.pdlRect, { opacity: 0.5 }]} />
+            <View style={[styles.pdlRect, { opacity: 0.3 }]} />
+          </View>
+          <Text style={styles.footerBrandText}>DesarrolloWeb-pdl</Text>
         </Pressable>
       </View>
     </View>
@@ -290,14 +297,37 @@ const createStyles = (colors: AppPalette) => StyleSheet.create({
   installText: { color: colors.textMuted, lineHeight: 20 },
   footer: {
     paddingVertical: 16,
+    paddingHorizontal: 16,
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    gap: 8,
   },
-  footerText: {
-    color: colors.primary,
+  footerCopyright: {
+    color: colors.textMuted,
     fontSize: 12,
-    textDecorationLine: 'underline',
+  },
+  footerBrand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pdlLogo: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: 16,
+    height: 16,
+    gap: 1,
+  },
+  pdlRect: {
+    width: 7,
+    height: 7,
+    borderRadius: 1.5,
+    backgroundColor: colors.textMuted,
+  },
+  footerBrandText: {
+    color: colors.textMuted,
+    fontSize: 11,
   },
   sectionHeading: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },
   separator: { height: 12 },
