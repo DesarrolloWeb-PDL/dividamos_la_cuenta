@@ -71,7 +71,7 @@ function formatPaymentHandleForShare(paymentHandle?: string) {
   const kind = detectPaymentHandleKind(normalizedPaymentHandle);
 
   if (kind === 'link') {
-    return normalizedPaymentHandle;
+    return `Link de cobro: ${normalizedPaymentHandle}`;
   }
 
   return `${getPaymentHandleLabel(normalizedPaymentHandle)}: ${normalizedPaymentHandle}`;
