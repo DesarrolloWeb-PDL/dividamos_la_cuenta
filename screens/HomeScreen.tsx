@@ -198,12 +198,41 @@ export default function HomeScreen({ navigation, route }: any) {
     const message = buildGroupAmountsMessage(groupName, expenses, users);
     const groupWhatsappLink = groupDetails?.whatsappGroupLink?.trim();
 
-    if (groupWhatsappLink) {
+    // Prioridad 1: Share API nativa — el usuario elige WhatsApp, grupo, etc.
+    try {
+      const result = await Share.share({ message, title: 'División de los gastos' });
+
+      if (result.action === Share.sharedAction) {
+        return;
+      }
+    } catch {
+      // Share no disponible — caer al fallback
+    }
+
+    // Prioridad 2: Deep link directo a WhatsApp (sin link de grupo)
+    if (!groupWhatsappLink) {
+      const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
+
       try {
-        await Clipboard.setStringAsync(message);
+        const canOpenWhatsapp = await Linking.canOpenURL(whatsappUrl);
+
+        if (canOpenWhatsapp) {
+          await Linking.openURL(whatsappUrl);
+          return;
+        }
+      } catch {
+        // WhatsApp no disponible — caer al fallback
+      }
+    }
+
+    // Fallback: copiar al portapapeles y abrir link del grupo si existe
+    try {
+      await Clipboard.setStringAsync(message);
+
+      if (groupWhatsappLink) {
         Alert.alert(
-          'Mensaje listo',
-          `${message.slice(0, 220)}${message.length > 220 ? '...' : ''}`,
+          'Mensaje copiado',
+          'El mensaje se copió al portapapeles. Pegalo en el grupo de WhatsApp.',
           [
             { text: 'Cancelar', style: 'cancel' },
             {
@@ -218,24 +247,9 @@ export default function HomeScreen({ navigation, route }: any) {
             },
           ],
         );
-        return;
-      } catch {
-        Alert.alert('Error', 'No se pudo abrir el grupo de WhatsApp configurado.');
-        return;
+      } else {
+        Alert.alert('Copiado', 'El mensaje se copió al portapapeles. Pegalo donde quieras compartirlo.');
       }
-    }
-
-    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
-
-    try {
-      const canOpenWhatsapp = await Linking.canOpenURL(whatsappUrl);
-
-      if (canOpenWhatsapp) {
-        await Linking.openURL(whatsappUrl);
-        return;
-      }
-
-      await Share.share({ message, title: 'División de los gastos' });
     } catch {
       Alert.alert('Error', 'No se pudo compartir la liquidación.');
     }
