@@ -61,6 +61,8 @@ function getRawPaymentHandle(paymentHandle?: string) {
   return normalizedPaymentHandle || null;
 }
 
+const MERCADOPAGO_PAY_URL = 'https://www.mercadopago.com.ar/pay/';
+
 function formatPaymentHandleForShare(paymentHandle?: string) {
   const normalizedPaymentHandle = getRawPaymentHandle(paymentHandle);
 
@@ -68,8 +70,14 @@ function formatPaymentHandleForShare(paymentHandle?: string) {
     return null;
   }
 
-  if (detectPaymentHandleKind(normalizedPaymentHandle) === 'link') {
+  const kind = detectPaymentHandleKind(normalizedPaymentHandle);
+
+  if (kind === 'link') {
     return normalizedPaymentHandle;
+  }
+
+  if (kind === 'alias') {
+    return `${MERCADOPAGO_PAY_URL}${normalizedPaymentHandle}`;
   }
 
   return `${getPaymentHandleLabel(normalizedPaymentHandle)}: ${normalizedPaymentHandle}`;
@@ -132,7 +140,7 @@ function buildGroupAmountsMessage(groupName: string, expenses: ExpenseView[], us
 function buildIndividualSettlementMessage(transfer: SettlementTransfer, groupName: string, users: UserView[]) {
   const creditor = users.find(user => user._id.toString() === transfer.toUserId);
   const creditorName = getPayeeDisplayName(creditor, transfer.toUserName);
-  const paymentHandle = getRawPaymentHandle(creditor?.paymentHandle);
+  const paymentHandle = formatPaymentHandleForShare(creditor?.paymentHandle);
 
   return [
     groupName,
@@ -279,6 +287,23 @@ export default function HomeScreen({ navigation, route }: any) {
       await Linking.openURL(webUrl);
     } catch {
       Alert.alert('Error', 'No se pudo abrir WhatsApp para ese integrante.');
+    }
+  };
+
+  const handleCopyPaymentHandle = async (transfer: SettlementTransfer) => {
+    const creditor = users.find(user => user._id.toString() === transfer.toUserId);
+    const rawHandle = getRawPaymentHandle(creditor?.paymentHandle);
+
+    if (!rawHandle) {
+      Alert.alert('Sin datos', 'No hay alias o CVU cargado para este integrante.');
+      return;
+    }
+
+    try {
+      await Clipboard.setStringAsync(rawHandle);
+      Alert.alert('Copiado', `${rawHandle} se copió al portapapeles.`);
+    } catch {
+      Alert.alert('Error', 'No se pudo copiar al portapapeles.');
     }
   };
 
@@ -461,12 +486,20 @@ export default function HomeScreen({ navigation, route }: any) {
                       <Text style={styles.transferText}>{transfer.toUserName}</Text>
                       <Text style={styles.transferAmount}>${formatTotalAmount(transfer.amount)}</Text>
                     </View>
-                    <Pressable
-                      onPress={() => handleNotifyTransferByWhatsapp(transfer)}
-                      style={styles.transferWhatsappButton}
-                    >
-                      <Text style={styles.transferWhatsappText}>WhatsApp</Text>
-                    </Pressable>
+                    <View style={styles.transferActions}>
+                      <Pressable
+                        onPress={() => handleCopyPaymentHandle(transfer)}
+                        style={styles.transferCopyButton}
+                      >
+                        <Text style={styles.transferCopyText}>Copiar</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handleNotifyTransferByWhatsapp(transfer)}
+                        style={styles.transferWhatsappButton}
+                      >
+                        <Text style={styles.transferWhatsappText}>WhatsApp</Text>
+                      </Pressable>
+                    </View>
                   </View>
                 </View>
               ))
@@ -584,6 +617,16 @@ const createStyles = (colors: AppPalette) => StyleSheet.create({
     paddingHorizontal: 12,
   },
   transferWhatsappText: { color: colors.success, fontWeight: '700' },
+  transferActions: { flexDirection: 'row', gap: 8 },
+  transferCopyButton: {
+    borderWidth: 1,
+    borderColor: colors.textMuted,
+    backgroundColor: colors.surface,
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  transferCopyText: { color: colors.textMuted, fontWeight: '700' },
   listHeading: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 4 },
   expenseSeparator: { height: 12 },
   expenseCard: {
