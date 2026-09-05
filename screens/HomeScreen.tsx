@@ -301,26 +301,6 @@ export default function HomeScreen({ navigation, route }: any) {
     }
   };
 
-  const handleSharePaymentHandle = async (transfer: SettlementTransfer) => {
-    const creditor = users.find(user => user._id.toString() === transfer.toUserId);
-    const rawHandle = getRawPaymentHandle(creditor?.paymentHandle);
-
-    if (!rawHandle) {
-      Alert.alert('Sin datos', 'No hay alias o CVU cargado para este integrante.');
-      return;
-    }
-
-    const handleKind = detectPaymentHandleKind(rawHandle);
-    const handleLabel = getPaymentHandleLabel(rawHandle);
-    const shareMessage = `${handleLabel}: ${rawHandle}`;
-
-    try {
-      await Share.share({ message: shareMessage, title: 'Datos de pago' });
-    } catch {
-      // Share cancelado o no disponible
-    }
-  };
-
   const handleDeleteExpense = async (expense: ExpenseView) => {
     const shouldDelete = await confirmAction({
       title: 'Eliminar gasto',
@@ -508,12 +488,6 @@ export default function HomeScreen({ navigation, route }: any) {
                         <Text style={styles.transferCopyText}>Copiar</Text>
                       </Pressable>
                       <Pressable
-                        onPress={() => handleSharePaymentHandle(transfer)}
-                        style={styles.transferOpenButton}
-                      >
-                        <Text style={styles.transferOpenText}>Abrir</Text>
-                      </Pressable>
-                      <Pressable
                         onPress={() => handleNotifyTransferByWhatsapp(transfer)}
                         style={styles.transferWhatsappButton}
                       >
@@ -647,15 +621,6 @@ const createStyles = (colors: AppPalette) => StyleSheet.create({
     paddingHorizontal: 12,
   },
   transferCopyText: { color: colors.textMuted, fontWeight: '700' },
-  transferOpenButton: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  transferOpenText: { color: colors.primary, fontWeight: '700' },
   listHeading: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 4 },
   expenseSeparator: { height: 12 },
   expenseCard: {
