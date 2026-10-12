@@ -9,6 +9,7 @@ import HomeScreen from './screens/HomeScreen';
 import AddExpenseScreen from './screens/AddExpenseScreen';
 import UsersScreen from './screens/UsersScreen';
 import AddUserScreen from './screens/AddUserScreen';
+import LandingScreen from './screens/LandingScreen';
 import { registerWebPwa } from './services/pwaInstallService';
 import { ThemeProvider, useAppTheme } from './theme/appTheme';
 
@@ -42,7 +43,8 @@ function AppNavigator() {
 
   return (
     <NavigationContainer theme={navigationTheme}>
-      <Stack.Navigator initialRouteName="Groups">
+      <Stack.Navigator initialRouteName="Landing">
+        <Stack.Screen name="Landing" component={LandingScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Groups" component={GroupsScreen} options={{ title: 'Grupos' }} />
         <Stack.Screen name="AddGroup" component={AddGroupScreen} options={{ title: 'Nuevo Grupo' }} />
         <Stack.Screen name="GroupHome" component={HomeScreen} options={{ title: 'Resumen del Grupo' }} />
