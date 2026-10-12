@@ -1,17 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1179 2556" role="img" aria-label="Dividamos la Cuenta">
   <rect width="1179" height="2556" fill="#0a0a0a"/>
   
-  <g transform="translate(589.5 1050) scale(4.2) translate(-50 -44.5)">
-    <g fill="#3b82f6" stroke="#3b82f6" stroke-width="4" stroke-linejoin="round">
-      <polygon points="50,15 65,22.5 65,36.5 50,44 35,36.5 35,22.5"/>
-      <polygon points="28,45 43,52.5 43,66.5 28,74 13,66.5 13,52.5"/>
-      <polygon points="72,45 87,52.5 87,66.5 72,74 57,66.5 57,52.5"/>
-    </g>
-    <g stroke="#0a0a0a" stroke-width="1.8" stroke-linecap="round" fill="none">
-      <path d="M35 22.5 L50 30 L65 22.5 M50 30 L50 44"/>
-      <path d="M13 52.5 L28 60 L43 52.5 M28 60 L28 74"/>
-      <path d="M57 52.5 L72 60 L87 52.5 M72 60 L72 74"/>
-    </g>
+  <g transform="translate(589.5 1000) scale(5.5) translate(-50 -50)">
+    <rect x="4" y="4" width="42" height="42" rx="8" fill="#3b82f6" opacity="1"/>
+    <rect x="54" y="4" width="42" height="42" rx="8" fill="#3b82f6" opacity="0.7"/>
+    <rect x="4" y="54" width="42" height="42" rx="8" fill="#3b82f6" opacity="0.5"/>
+    <rect x="54" y="54" width="42" height="42" rx="8" fill="#3b82f6" opacity="0.3"/>
   </g>
 
   <text x="589.5" y="1450" text-anchor="middle" fill="#ededed" font-family="Arial, sans-serif" font-size="96" font-weight="800">Dividamos la Cuenta</text>

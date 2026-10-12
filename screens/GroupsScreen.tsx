@@ -216,7 +216,7 @@ export default function GroupsScreen({ navigation }: any) {
         )}
       />
       <View style={styles.footer}>
-        <Text style={styles.footerCopyright}>© 2026 Dividamos la Cuenta. Todos os direitos reservados.</Text>
+        <Text style={styles.footerCopyright}>© 2026 Dividamos la Cuenta. Todos los derechos reservados.</Text>
         <Pressable onPress={() => Linking.openURL('https://desarrolloweb-pdl.vercel.app/')} style={styles.footerBrand}>
           <View style={styles.pdlLogo}>
             <View style={[styles.pdlRect, { opacity: 1 }]} />
