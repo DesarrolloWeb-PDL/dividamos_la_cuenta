@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import CustomButton from '../components/CustomButton';
-import { APP_DISPLAY_NAME, APP_HERO_GREETING, APP_TAGLINE } from '../services/appConfig';
+import { APP_DISPLAY_NAME } from '../services/appConfig';
 import { confirmAction } from '../services/dialogService';
 import { deleteExpensesByGroup, getAllExpenses } from '../services/expenseService';
 import { deleteGroup, getAllGroups } from '../services/groupService';
@@ -161,26 +160,10 @@ export default function GroupsScreen({ navigation }: any) {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={(
           <View style={styles.headerStack}>
-            <View style={styles.heroCard}>
-              <View style={styles.heroTopRow}>
-                <Text style={styles.eyebrow}>Aplicación para dividir gastos</Text>
-                <Pressable onPress={cycleMode} style={styles.themeToggle}>
-                  <Text style={styles.themeToggleIcon}>{mode === 'dark' ? '☀' : '☾'}</Text>
-                </Pressable>
-              </View>
-              <View style={styles.heroIconRow}>
-                <View style={styles.heroIconBadge}>
-                  <MaterialCommunityIcons name="calculator-variant-outline" size={22} color={colors.textOnHero} />
-                </View>
-                <View style={styles.heroIconBadge}>
-                  <MaterialCommunityIcons name="account-heart-outline" size={22} color={colors.textOnHero} />
-                </View>
-              </View>
-              <Text style={styles.title}>{APP_HERO_GREETING}</Text>
-              <Text style={styles.tagline}>{APP_TAGLINE}</Text>
-              <Text style={styles.subtitle}>
-                Organizá grupos, cargá gastos compartidos y resolvé cuánto tiene que pagar cada integrante sin mensajes eternos ni cuentas confusas.
-              </Text>
+            <View style={styles.topBar}>
+              <Pressable onPress={cycleMode} style={styles.themeToggle}>
+                <Text style={styles.themeToggleIcon}>{mode === 'dark' ? '☀' : '☾'}</Text>
+              </Pressable>
             </View>
             <View style={styles.actionsCard}>
               <Text style={styles.sectionHeading}>Pantalla principal</Text>
@@ -236,51 +219,18 @@ const createStyles = (colors: AppPalette) => StyleSheet.create({
   flatList: { flex: 1 },
   content: { padding: 16, paddingBottom: 16 },
   headerStack: { gap: 12, marginBottom: 16 },
-  heroCard: {
-    backgroundColor: colors.hero,
-    borderRadius: 20,
-    padding: 20,
-  },
-  heroTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  eyebrow: {
-    color: colors.heroMuted,
-    textTransform: 'uppercase',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
+  topBar: { alignItems: 'flex-end' },
   themeToggle: {
     width: 38,
     height: 38,
     borderWidth: 1,
-    borderColor: colors.heroMuted,
+    borderColor: colors.border,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
-  themeToggleIcon: { color: colors.textOnHero, fontWeight: '700', fontSize: 18 },
-  heroIconRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  heroIconBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(248, 250, 252, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(248, 250, 252, 0.2)',
-  },
-  title: { fontSize: 28, fontWeight: '700', color: colors.textOnHero, marginBottom: 6 },
-  subtitle: { fontSize: 15, lineHeight: 22, color: colors.heroMuted },
-  tagline: {
-    fontSize: 14,
-    lineHeight: 18,
-    color: colors.heroMuted,
-    marginBottom: 10,
-    fontWeight: '600',
-  },
+  themeToggleIcon: { color: colors.text, fontWeight: '700', fontSize: 18 },
   actionsCard: {
     backgroundColor: colors.surface,
     borderRadius: 16,
