@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Svg, { Path, Polygon } from 'react-native-svg';
 import { useAppTheme } from '../theme/appTheme';
 
 type Props = {
@@ -21,27 +22,16 @@ const FEATURES = [
   },
 ];
 
-function CubesLogo({ size = 96, color }: { size?: number; color: string }) {
-  const cell = size * 0.44;
-  const gap = size * 0.12;
-  const opacity = [1, 0.7, 0.5, 0.3];
-
+function IsometricCubes({ size = 96, color }: { size?: number; color: string }) {
   return (
-    <View style={{ width: size, height: size, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
-      {opacity.map((o, i) => (
-        <View
-          key={i}
-          style={{
-            width: cell,
-            height: cell,
-            borderRadius: cell * 0.22,
-            backgroundColor: color,
-            opacity: o,
-            margin: gap / 2,
-          }}
-        />
-      ))}
-    </View>
+    <Svg width={size} height={size} viewBox="0 0 100 100">
+      <Polygon points="50,15 65,22.5 65,36.5 50,44 35,36.5 35,22.5" fill={color} stroke={color} strokeWidth={4} strokeLinejoin="round" />
+      <Polygon points="28,45 43,52.5 43,66.5 28,74 13,66.5 13,52.5" fill={color} stroke={color} strokeWidth={4} strokeLinejoin="round" />
+      <Polygon points="72,45 87,52.5 87,66.5 72,74 57,66.5 57,52.5" fill={color} stroke={color} strokeWidth={4} strokeLinejoin="round" />
+      <Path d="M35 22.5 L50 30 L65 22.5 M50 30 L50 44" stroke="#fafafa" strokeWidth={1.8} strokeLinecap="round" fill="none" />
+      <Path d="M13 52.5 L28 60 L43 52.5 M28 60 L28 74" stroke="#fafafa" strokeWidth={1.8} strokeLinecap="round" fill="none" />
+      <Path d="M57 52.5 L72 60 L87 52.5 M72 60 L72 74" stroke="#fafafa" strokeWidth={1.8} strokeLinecap="round" fill="none" />
+    </Svg>
   );
 }
 
@@ -112,11 +102,20 @@ export default function LandingScreen({ navigation }: Props) {
       color: colors.primary,
       letterSpacing: -0.2,
     },
-    footerNote: {
+    footer: {
       marginTop: 40,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    footerNote: {
       fontSize: 12,
       color: colors.textMuted,
-      textAlign: 'center',
+    },
+    footerLink: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.primary,
     },
   }), [colors]);
 
@@ -128,7 +127,7 @@ export default function LandingScreen({ navigation }: Props) {
         <Text style={styles.subtitle}>Sin planillas. Sin discusiones.</Text>
 
         <View style={styles.logoWrap}>
-          <CubesLogo color={colors.primary} />
+          <IsometricCubes color={colors.primary} />
         </View>
 
         <Text style={styles.description}>
@@ -147,7 +146,12 @@ export default function LandingScreen({ navigation }: Props) {
           <Text style={styles.cta}>Empezar →</Text>
         </Pressable>
 
-        <Text style={styles.footerNote}>Hecho en Paso de los Libres</Text>
+        <View style={styles.footer}>
+          <Text style={styles.footerNote}>Hecho por </Text>
+          <Pressable onPress={() => Linking.openURL('https://desarrolloweb-pdl.vercel.app')}>
+            <Text style={styles.footerLink}>DesarrolloWeb-pdl</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </View>
   );
